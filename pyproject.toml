@@ -1,0 +1,26 @@
+[project]
+name = "bv-credit-orchestrator"
+version = "0.1.0"
+description = "LangGraph orchestrator combining Vertex AI RAG and Google ADK A2A for credit policy Q&A"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+# Tests are discovered under tests/; short tracebacks keep output readable.
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+# Prevent pytest from collecting docs/ or src/ as test paths.
+norecursedirs = ["src", "docs", ".venv", "dist", "build"]
+# Our tests don't use async directly; asyncio_mode=auto avoids requiring
+# explicit @pytest.mark.asyncio on every test (not needed here, but set to
+# avoid breaking changes when pytest-asyncio upgrades its default).
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# E/W = pycodestyle, F = pyflakes, I = isort, N = pep8-naming, UP = pyupgrade.
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = [
+    "E501",  # line-length handled by formatter
+]
