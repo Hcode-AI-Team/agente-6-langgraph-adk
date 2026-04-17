@@ -28,5 +28,3 @@ htmlcov/
 dist/
 build/
 *.egg-info/
-
-docs/LANGGRAPH_NODES_EDGES.md

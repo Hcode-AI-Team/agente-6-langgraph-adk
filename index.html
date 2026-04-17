@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Engenharia Agêntica com LangGraph</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutrals (Stone) with Teal and Indigo accents -->
+    <!-- Application Structure Plan: SPA with a tabbed navigation system. Section 1 introduces the paradigm. Section 2 is an interactive dashboard for Topologies with a radar chart for comparison. Section 3 covers State & Persistance with code snippets. Section 4 features an interactive timeline for HIL and Time Travel. This structure breaks down dense PhD-level architectural concepts into digestible, interactive modules, prioritizing logical flow over a linear reading experience. -->
+    <!-- Visualization & Content Choices: Topologies -> Compare architectures -> Radar Chart (Chart.js) -> Dynamic switching to compare trade-offs visually -> Chart.js on Canvas. HIL/Time Travel -> Explain process -> Interactive Stepper (HTML/CSS/JS) -> User clicks to advance states -> Custom JS. Diagrams -> Topologies -> HTML/CSS nodes -> Visual representation -> Pure HTML/CSS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+      .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        height: 350px;
+        max-height: 400px;
+      }
+      @media (min-width: 768px) {
+        .chart-container {
+          height: 380px;
+        }
+      }
+      body {
+        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #fafaf9;
+        color: #292524;
+      }
+      .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease-in-out;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .node-diagram {
+        position: relative;
+        width: 100%;
+        height: 200px;
+        background: #f5f5f4;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        border: 1px solid #e7e5e4;
+      }
+      .node-circle {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        background: #0d9488;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 12px;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .node-circle.central {
+        background: #4f46e5;
+        width: 50px;
+        height: 50px;
+        font-size: 14px;
+      }
+      .node-line {
+        position: absolute;
+        background: #a8a29e;
+        z-index: 5;
+      }
+
+      .code-block {
+        font-family: monospace;
+        background-color: #1c1917;
+        color: #e7e5e4;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        font-size: 0.875rem;
+        border-left: 4px solid #0d9488;
+      }
+      .hil-step {
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+      }
+      .hil-step.active {
+        border-color: #0d9488;
+        background-color: #f0fdfa;
+        transform: scale(1.02);
+      }
+      .hil-step.completed {
+        border-color: #d6d3d1;
+        opacity: 0.7;
+      }
+    </style>
+  </head>
+  <body class="antialiased min-h-screen flex flex-col">
+    <header
+      class="bg-stone-900 text-stone-50 py-6 px-4 md:px-8 shadow-md sticky top-0 z-50"
+    >
+      <div
+        class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4"
+      >
+        <div>
+          <h1
+            class="text-2xl md:text-3xl font-bold tracking-tight text-teal-400"
+          >
+            LangGraph Mestre
+          </h1>
+          <p class="text-stone-400 text-sm mt-1">
+            Orquestração, Persistência e Controle de Estado em Finanças
+          </p>
+        </div>
+        <nav class="flex gap-2 bg-stone-800 p-1 rounded-lg">
+          <button
+            onclick="switchTab('paradigma')"
+            class="tab-btn active px-4 py-2 text-sm font-medium rounded-md bg-stone-700 text-white transition-colors"
+            data-target="paradigma"
+          >
+            Paradigma
+          </button>
+          <button
+            onclick="switchTab('topologias')"
+            class="tab-btn px-4 py-2 text-sm font-medium rounded-md text-stone-300 hover:bg-stone-700 hover:text-white transition-colors"
+            data-target="topologias"
+          >
+            Topologias
+          </button>
+          <button
+            onclick="switchTab('estado')"
+            class="tab-btn px-4 py-2 text-sm font-medium rounded-md text-stone-300 hover:bg-stone-700 hover:text-white transition-colors"
+            data-target="estado"
+          >
+            Estado & Persistência
+          </button>
+          <button
+            onclick="switchTab('controle')"
+            class="tab-btn px-4 py-2 text-sm font-medium rounded-md text-stone-300 hover:bg-stone-700 hover:text-white transition-colors"
+            data-target="controle"
+          >
+            Controle (HIL)
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl mx-auto w-full p-4 md:p-8">
+      <div id="paradigma" class="tab-content active">
+        <div
+          class="bg-white p-6 md:p-10 rounded-xl shadow-sm border border-stone-200"
+        >
+          <h2
+            class="text-3xl font-bold text-stone-800 mb-4 border-b pb-4 border-stone-100"
+          >
+            1. O Paradigma de Grafos de Estado Distribuídos
+          </h2>
+          <p class="text-stone-600 mb-6 text-lg leading-relaxed">
+            Esta seção introduz a mudança fundamental de mentalidade necessária
+            para operar com agentes em ambientes institucionais de alto risco
+            (Finanças, Compliance). A leitura linear do LLM dá lugar a um motor
+            robusto de estado distribuído.
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <div>
+              <p class="text-stone-700 mb-4 leading-relaxed">
+                Para engenheiros do setor financeiro, construir agentes não é um
+                problema de IA generativa, mas um problema de
+                <strong class="text-indigo-700">sistemas distribuídos</strong>.
+                A execução estocástica de LLMs (como o ReAct clássico) é
+                incompatível com os requisitos de determinismo, auditoria e
+                resiliência exigidos por áreas de Compliance e Risco.
+              </p>
+              <p class="text-stone-700 leading-relaxed">
+                O LangGraph resolve isso modelando sistemas multiagentes como
+                <strong class="text-teal-700"
+                  >Máquinas de Estado Finito (FSM)</strong
+                >
+                e Grafos Direcionados. O framework consolida ferramentas de
+                nível corporativo para controle de fluxo, introduzindo o objeto
+                <code
+                  class="bg-stone-100 px-2 py-1 rounded text-sm text-stone-800 border border-stone-200"
+                  >Command</code
+                >
+                para transições dinâmicas e uma arquitetura robusta de
+                Checkpointers assíncronos.
+              </p>
+            </div>
+            <div
+              class="bg-stone-50 p-6 rounded-lg border border-stone-200 flex flex-col justify-center items-center h-full"
+            >
+              <div class="text-center mb-4">
+                <span
+                  class="inline-block p-3 bg-red-100 text-red-800 rounded-full font-bold mb-2"
+                  >ReAct Clássico</span
+                >
+                <p class="text-sm text-stone-500">
+                  Caixa-preta estocástica. Falha em produção institucional.
+                </p>
+              </div>
+              <div class="text-2xl text-stone-400 mb-4">
+                &#8595; Evolução &#8595;
+              </div>
+              <div class="text-center">
+                <span
+                  class="inline-block p-3 bg-teal-100 text-teal-800 rounded-full font-bold mb-2"
+                  >LangGraph FSM</span
+                >
+                <p class="text-sm text-stone-500">
+                  Transições atômicas, estado imutável persistido, auditoria
+                  total.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="topologias" class="tab-content">
+        <div class="mb-6">
+          <h2 class="text-3xl font-bold text-stone-800 mb-2">
+            2. Topologias de Orquestração
+          </h2>
+          <p class="text-stone-600 text-lg">
+            Explore os quatro padrões arquiteturais dominantes. Interaja com os
+            botões abaixo para visualizar como cada estrutura organiza os
+            agentes, roteia informações e impacta as métricas do sistema.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-1 flex flex-col gap-3">
+            <button
+              onclick="loadTopology('supervisor')"
+              id="btn-supervisor"
+              class="topo-btn bg-white border-2 border-teal-600 text-teal-700 font-bold p-4 rounded-xl text-left shadow-sm hover:bg-stone-50 transition-all flex justify-between items-center"
+            >
+              <span>Supervisor Central</span>
+              <span class="text-xl">&#9733;</span>
+            </button>
+            <button
+              onclick="loadTopology('swarm')"
+              id="btn-swarm"
+              class="topo-btn bg-white border border-stone-200 text-stone-600 p-4 rounded-xl text-left shadow-sm hover:border-teal-400 hover:text-teal-700 transition-all flex justify-between items-center"
+            >
+              <span>Swarm (Malha)</span>
+              <span class="text-xl">&#10047;</span>
+            </button>
+            <button
+              onclick="loadTopology('hierarchical')"
+              id="btn-hierarchical"
+              class="topo-btn bg-white border border-stone-200 text-stone-600 p-4 rounded-xl text-left shadow-sm hover:border-teal-400 hover:text-teal-700 transition-all flex justify-between items-center"
+            >
+              <span>Grafo Hierárquico</span>
+              <span class="text-xl">&#9737;</span>
+            </button>
+            <button
+              onclick="loadTopology('network')"
+              id="btn-network"
+              class="topo-btn bg-white border border-stone-200 text-stone-600 p-4 rounded-xl text-left shadow-sm hover:border-teal-400 hover:text-teal-700 transition-all flex justify-between items-center"
+            >
+              <span>Colaboração (Actor-Critic)</span>
+              <span class="text-xl">&#8646;</span>
+            </button>
+          </div>
+
+          <div
+            class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-stone-200 p-6 flex flex-col"
+          >
+            <div class="flex-grow">
+              <div
+                class="flex justify-between items-start mb-4 border-b border-stone-100 pb-4"
+              >
+                <div>
+                  <h3 id="topo-title" class="text-2xl font-bold text-stone-800">
+                    Supervisor (Orquestração Centralizada)
+                  </h3>
+                  <p
+                    id="topo-analogy"
+                    class="text-sm text-indigo-600 font-medium mt-1"
+                  >
+                    Cenário: Portfolio Manager + Analistas
+                  </p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <p
+                    id="topo-desc"
+                    class="text-stone-700 text-sm leading-relaxed mb-4"
+                  >
+                    Utiliza o objeto `Command` para atualizar o estado global e,
+                    simultaneamente, ditar o próximo nó. O nó Supervisor não
+                    executa o trabalho pesado, ele roteia baseado na avaliação
+                    do estado atual.
+                  </p>
+                  <div
+                    class="bg-stone-50 rounded p-3 border border-stone-200 text-sm"
+                  >
+                    <div class="text-green-700 mb-2">
+                      <strong class="uppercase text-xs tracking-wider"
+                        >Prós:</strong
+                      >
+                      <span id="topo-pros"
+                        >Auditoria centralizada (ponto único de falha
+                        controlável).</span
+                      >
+                    </div>
+                    <div class="text-red-700">
+                      <strong class="uppercase text-xs tracking-wider"
+                        >Contras:</strong
+                      >
+                      <span id="topo-cons"
+                        >Inflação da janela de contexto. Supervisor processa
+                        todo delta.</span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  id="topo-visual"
+                  class="node-diagram flex items-center justify-center relative"
+                >
+                  <div
+                    class="node-line"
+                    style="top: 50%; left: 20%; width: 60%; height: 2px"
+                  ></div>
+                  <div
+                    class="node-line"
+                    style="top: 25%; left: 50%; width: 2px; height: 50%"
+                  ></div>
+                  <div
+                    class="node-circle central"
+                    style="top: calc(50% - 25px); left: calc(50% - 25px)"
+                  >
+                    Sup
+                  </div>
+                  <div
+                    class="node-circle"
+                    style="top: calc(50% - 20px); left: 10%"
+                  >
+                    W1
+                  </div>
+                  <div
+                    class="node-circle"
+                    style="top: calc(50% - 20px); right: 10%"
+                  >
+                    W2
+                  </div>
+                  <div
+                    class="node-circle"
+                    style="top: 10%; left: calc(50% - 20px)"
+                  >
+                    W3
+                  </div>
+                  <div
+                    class="node-circle"
+                    style="bottom: 10%; left: calc(50% - 20px)"
+                  >
+                    W4
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border-t border-stone-100 pt-6">
+              <h4
+                class="text-center text-sm font-bold text-stone-500 uppercase tracking-wider mb-4"
+              >
+                Análise Dimensional de Arquitetura
+              </h4>
+              <div class="chart-container">
+                <canvas id="topologyRadarChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="estado" class="tab-content">
+        <div class="mb-6">
+          <h2 class="text-3xl font-bold text-stone-800 mb-2">
+            3. Implementação Corporativa: O Motor de Estado
+          </h2>
+          <p class="text-stone-600 text-lg">
+            A diferença entre um script experimental e um sistema financeiro
+            core reside em como o Estado é gerenciado, reduzido e persistido
+            frente a falhas de infraestrutura.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div
+            class="bg-white p-6 rounded-xl shadow-sm border border-stone-200"
+          >
+            <h3
+              class="text-xl font-bold text-teal-700 mb-3 flex items-center gap-2"
+            >
+              <span class="text-2xl">&#9881;</span> Tipagem e Redução (State
+              Bus)
+            </h3>
+            <p class="text-stone-700 mb-4 text-sm leading-relaxed">
+              O conceito de <strong>Reducers</strong> é crítico: eles definem
+              matematicamente como as atualizações parciais dos nós são
+              mescladas ao estado global. Sem reducers estritos, agentes
+              sobrescreveriam dados uns dos outros, destruindo o histórico
+              analítico.
+            </p>
+            <div class="code-block text-xs">
+              from typing import Annotated, TypedDict from
+              langgraph.graph.message import add_messages import operator class
+              TradeExecutionState(TypedDict): # Histórico append-only NUNCA
+              sobrescrito messages: Annotated[list, add_messages] # Atualizado
+              via fusão de dicionários portfolio_status: dict # Reducer
+              customizado (soma de risco) cumulative_risk_score:
+              Annotated[float, operator.add] # Sobrescrita a cada passo
+              trade_approved: bool
+            </div>
+          </div>
+
+          <div
+            class="bg-white p-6 rounded-xl shadow-sm border border-stone-200"
+          >
+            <h3
+              class="text-xl font-bold text-indigo-700 mb-3 flex items-center gap-2"
+            >
+              <span class="text-2xl">&#128190;</span> Persistência Resiliente
+              (Checkpointers)
+            </h3>
+            <p class="text-stone-700 mb-4 text-sm leading-relaxed">
+              Em produção, estado em memória é inadmissível. Checkpointers
+              salvam um snapshot após cada nó. Garantindo
+              <em>ACID compliance</em> (usualmente via PostgreSQL), o grafo pode
+              sobreviver a reboots de contêineres e bloqueios de concorrência.
+            </p>
+            <div class="code-block text-xs">
+              from langgraph.checkpoint.postgres import PostgresSaver from
+              psycopg_pool import ConnectionPool # Pool persistente para banco
+              corporativo pool = ConnectionPool("postgresql://user@host/db")
+              checkpointer = PostgresSaver(pool) # Compilação vinculando a
+              persistência app = workflow.compile(checkpointer=checkpointer) #
+              Identidade única do fluxo config = {"configurable": {"thread_id":
+              "trade_001"}}
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="mt-8 bg-stone-900 text-stone-100 p-6 rounded-xl shadow-md border border-stone-800"
+        >
+          <h4
+            class="font-bold text-amber-400 mb-2 uppercase text-sm tracking-wider"
+          >
+            A Anatomia de uma Thread
+          </h4>
+          <p class="text-sm text-stone-300 leading-relaxed mb-4">
+            No LangGraph, uma <strong>Thread</strong> não é de CPU. É um
+            particionamento lógico no banco de dados. Múltiplos contêineres
+            podem processar execuções simultâneas; se um morrer processando a
+            `Thread A`, outro pode puxar a mesma thread do Postgres e continuar
+            exatamente de onde parou. O estado não está na RAM, mas atrelado ao
+            `thread_id`.
+          </p>
+          <div class="chart-container" style="height: 200px; max-height: 200px">
+            <canvas id="threadsBarChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div id="controle" class="tab-content">
+        <div class="mb-6">
+          <h2 class="text-3xl font-bold text-stone-800 mb-2">
+            4. Human-in-the-Loop (HIL) & Time Travel
+          </h2>
+          <p class="text-stone-600 text-lg">
+            Transforme caixas-pretas estocásticas em Copilotos auditáveis.
+            Interaja com o simulador abaixo para entender como as interrupções
+            determinísticas previnem desastres financeiros autônomos.
+          </p>
+        </div>
+
+        <div
+          class="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-stone-200 mb-8"
+        >
+          <h3 class="text-xl font-bold text-stone-800 mb-6">
+            Simulador de Execução de Trade: Breakpoint HIL
+          </h3>
+
+          <div
+            class="flex flex-col md:flex-row justify-between items-stretch gap-4 mb-8 relative"
+          >
+            <div
+              class="absolute top-1/2 left-0 w-full h-1 bg-stone-200 -z-10 hidden md:block"
+              style="transform: translateY(-50%)"
+            ></div>
+
+            <div
+              id="step-1"
+              class="hil-step active flex-1 bg-white p-4 rounded-lg text-center shadow-sm"
+            >
+              <div
+                class="w-10 h-10 mx-auto bg-stone-200 text-stone-600 rounded-full flex items-center justify-center font-bold mb-2"
+              >
+                1
+              </div>
+              <h4 class="font-bold text-sm">Agentes Analisam</h4>
+              <p class="text-xs text-stone-500 mt-1">
+                Geração de proposta. Grafo em execução.
+              </p>
+            </div>
+
+            <div
+              id="step-2"
+              class="hil-step flex-1 bg-white p-4 rounded-lg text-center shadow-sm"
+            >
+              <div
+                class="w-10 h-10 mx-auto bg-stone-200 text-stone-600 rounded-full flex items-center justify-center font-bold mb-2"
+              >
+                2
+              </div>
+              <h4 class="font-bold text-sm">Interrupção (Pausa)</h4>
+              <p class="text-xs text-stone-500 mt-1">
+                `interrupt_before`. Servidor liberado. Estado salvo.
+              </p>
+            </div>
+
+            <div
+              id="step-3"
+              class="hil-step flex-1 bg-white p-4 rounded-lg text-center shadow-sm"
+            >
+              <div
+                class="w-10 h-10 mx-auto bg-stone-200 text-stone-600 rounded-full flex items-center justify-center font-bold mb-2"
+              >
+                3
+              </div>
+              <h4 class="font-bold text-sm">Humano Intervém</h4>
+              <p class="text-xs text-stone-500 mt-1">
+                `update_state` com `as_node`. Analista aprova.
+              </p>
+            </div>
+
+            <div
+              id="step-4"
+              class="hil-step flex-1 bg-white p-4 rounded-lg text-center shadow-sm"
+            >
+              <div
+                class="w-10 h-10 mx-auto bg-stone-200 text-stone-600 rounded-full flex items-center justify-center font-bold mb-2"
+              >
+                4
+              </div>
+              <h4 class="font-bold text-sm">Resume (Retomada)</h4>
+              <p class="text-xs text-stone-500 mt-1">
+                Grafo acorda, lê aprovação e executa ordem.
+              </p>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <button
+              id="sim-btn"
+              onclick="advanceSimulation()"
+              class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-8 rounded-full shadow-md transition-transform transform hover:scale-105"
+            >
+              Iniciar Execução do Grafo
+            </button>
+            <p
+              id="sim-text"
+              class="text-stone-500 text-sm mt-4 font-mono code-block inline-block text-left"
+            >
+              app.stream(initial_input, config)
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-100">
+            <h3 class="text-lg font-bold text-indigo-900 mb-2">
+              O Operador como um Nó
+            </h3>
+            <p class="text-sm text-indigo-800 leading-relaxed mb-4">
+              A mágica do HIL não é apenas "autorizar". Ao usar `update_state`
+              com `as_node="Compliance_Approval_Node"`, o humano atua
+              virtualmente como um nó no grafo. O LangGraph entende a autoria da
+              mudança, permitindo que as arestas condicionais funcionem
+              corretamente.
+            </p>
+          </div>
+          <div class="bg-stone-50 p-6 rounded-xl border border-stone-200">
+            <h3 class="text-lg font-bold text-stone-800 mb-2">
+              Time Travel (State Forking)
+            </h3>
+            <p class="text-sm text-stone-600 leading-relaxed">
+              Cada checkpoint gera um ID único (como um commit no Git). Você
+              pode carregar um estado passado, modificar uma variável no BD e
+              dar "Resume". O LangGraph não sobrescreve o original; ele cria um
+              <em>Fork</em>. Essencial para auditorias e backtesting
+              contrafactual em finanças.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="bg-stone-100 border-t border-stone-200 py-6 mt-8">
+      <div class="max-w-6xl mx-auto px-4 text-center text-stone-500 text-sm">
+        <p>
+          Dashboard Arquitetural Interativo - Baseado em Paradigmas de
+          Orquestração LangGraph (v0.2+)
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      // Data Store
+      const topologyData = {
+        supervisor: {
+          title: "Supervisor (Orquestração Centralizada)",
+          analogy:
+            "Cenário: Portfolio Manager delegando para Analistas de tarefas específicas.",
+          desc: "Na arquitetura moderna (v0.2+), o Supervisor utiliza o objeto `Command` para atualizar o estado global e ditar o próximo nó simultaneamente, acoplando a decisão à mutação de estado e reduzindo latência.",
+          pros: "Auditoria centralizada. Controle absoluto sobre o ponto único de falha analítica.",
+          cons: "Inflação da janela de contexto. O Supervisor precisa processar o delta de informação gerado por todos os workers.",
+          chart: [9, 3, 5, 4, 7],
+          renderHtml: `
+                    <div class="node-line" style="top: 50%; left: 20%; width: 60%; height: 2px;"></div>
+                    <div class="node-line" style="top: 25%; left: 50%; width: 2px; height: 50%;"></div>
+                    <div class="node-circle central" style="top: calc(50% - 25px); left: calc(50% - 25px);">Sup</div>
+                    <div class="node-circle" style="top: calc(50% - 20px); left: 10%;">W1</div>
+                    <div class="node-circle" style="top: calc(50% - 20px); right: 10%;">W2</div>
+                    <div class="node-circle" style="top: 10%; left: calc(50% - 20px);">W3</div>
+                    <div class="node-circle" style="bottom: 10%; left: calc(50% - 20px);">W4</div>
+                `,
+        },
+        swarm: {
+          title: "Swarm (Malha / Handoffs Fluídos)",
+          analogy:
+            "Cenário: Mesa de operações (OTC). Admissão -> Precificação -> Liquidação diretamente.",
+          desc: "Delegação descentralizada sem roteador central. Agentes utilizam ferramentas de `Handoff`. Ao atingir o limite de competência, retornam `Command(goto='Destino', update={...})` para transferir o fluxo diretamente.",
+          pros: "Otimização agressiva de tokens. O contexto transita apenas entre os nós interessados.",
+          cons: "Risco de ciclos infinitos (bouncing) se não implementados limites estritos de profundidade.",
+          chart: [3, 9, 8, 6, 5],
+          renderHtml: `
+                    <div class="node-line" style="top: 30%; left: 30%; width: 40%; height: 2px; transform: rotate(45deg); transform-origin: left;"></div>
+                    <div class="node-line" style="top: 70%; left: 30%; width: 40%; height: 2px; transform: rotate(-45deg); transform-origin: left;"></div>
+                    <div class="node-line" style="top: 50%; left: 25%; width: 50%; height: 2px;"></div>
+                    <div class="node-circle" style="top: 40%; left: 15%;">In</div>
+                    <div class="node-circle" style="top: 15%; left: 45%;">Ag1</div>
+                    <div class="node-circle" style="top: 70%; left: 45%;">Ag2</div>
+                    <div class="node-circle" style="top: 40%; right: 15%;">Out</div>
+                `,
+        },
+        hierarchical: {
+          title: "Grafo Hierárquico (Subgrafos)",
+          analogy:
+            "Cenário: Hedge Fund IA. CIO (Grafo Macro) invoca Mesas de Renda Fixa e Equities (Subgrafos).",
+          desc: "StateGraphs compilados adicionados como nós únicos em um grafo pai. Foca no isolamento estrito de estado (contratos de interface) para evitar poluição do contexto global com micro-transações locais.",
+          pros: "Encapsulamento perfeito e escalabilidade massiva. Permite desenvolvimento independente.",
+          cons: "Alta complexidade de engenharia no mapeamento de estado entre pai e filhos.",
+          chart: [7, 6, 9, 9, 8],
+          renderHtml: `
+                    <div class="node-line" style="top: 20%; left: 50%; width: 2px; height: 30%;"></div>
+                    <div class="node-line" style="top: 50%; left: 30%; width: 40%; height: 2px;"></div>
+                    <div class="node-line" style="top: 50%; left: 30%; width: 2px; height: 25%;"></div>
+                    <div class="node-line" style="top: 50%; right: 30%; width: 2px; height: 25%;"></div>
+                    <div class="node-circle central" style="top: 5%; left: calc(50% - 25px);">Pai</div>
+                    <div class="node-circle" style="top: 70%; left: calc(30% - 20px); border-radius: 5px; width: 45px;">Sub A</div>
+                    <div class="node-circle" style="top: 70%; right: calc(30% - 20px); border-radius: 5px; width: 45px;">Sub B</div>
+                `,
+        },
+        network: {
+          title: "Colaboração em Rede (Actor-Critic)",
+          analogy:
+            "Cenário: Comitê de Risco iterando sobre uma proposta de crédito gerada por um analista.",
+          desc: "Padrão cíclico poderoso. O fluxo alterna entre o nó Gerador e o Crítico, modificando o mesmo artefato no estado até que uma condição de consenso ou limite seja atingida.",
+          pros: "Qualidade superior em tarefas generativas devido ao mecanismo de debate intrínseco.",
+          cons: "Maior latência de execução e gasto de tokens multiplicativo por iteração.",
+          chart: [5, 4, 4, 7, 9],
+          renderHtml: `
+                    <div class="node-line" style="top: 40%; left: 30%; width: 40%; height: 2px;"></div>
+                    <div class="node-line" style="bottom: 40%; left: 30%; width: 40%; height: 2px;"></div>
+                    <div class="absolute" style="top: 36%; left: 50%; font-size: 10px; color: #a8a29e;">&#9654; Cria</div>
+                    <div class="absolute" style="bottom: 33%; left: 50%; font-size: 10px; color: #a8a29e;">&#9664; Critica</div>
+                    <div class="node-circle central" style="top: calc(50% - 25px); left: 15%;">Act</div>
+                    <div class="node-circle" style="top: calc(50% - 20px); right: 15%; background: #be123c;">Crit</div>
+                `,
+        },
+      };
+
+      let radarChart;
+
+      function initCharts() {
+        // Radar Chart for Topologies
+        const ctxRadar = document
+          .getElementById("topologyRadarChart")
+          .getContext("2d");
+        radarChart = new Chart(ctxRadar, {
+          type: "radar",
+          data: {
+            labels: [
+              "Controle Central",
+              "Economia Tokens",
+              "Escalabilidade",
+              "Complex. Engenharia",
+              "Resiliência a Falhas",
+            ],
+            datasets: [
+              {
+                label: "Dimensões da Topologia",
+                data: topologyData.supervisor.chart,
+                backgroundColor: "rgba(13, 148, 136, 0.2)",
+                borderColor: "rgba(13, 148, 136, 1)",
+                pointBackgroundColor: "rgba(13, 148, 136, 1)",
+                pointBorderColor: "#fff",
+                pointHoverBackgroundColor: "#fff",
+                pointHoverBorderColor: "rgba(13, 148, 136, 1)",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              r: {
+                angleLines: { color: "rgba(0, 0, 0, 0.1)" },
+                grid: { color: "rgba(0, 0, 0, 0.1)" },
+                pointLabels: {
+                  font: { size: 11, family: "'Segoe UI', sans-serif" },
+                  color: "#57534e",
+                },
+                ticks: { display: false, min: 0, max: 10 },
+              },
+            },
+            plugins: { legend: { display: false }, tooltip: { enabled: true } },
+          },
+        });
+
+        // Bar Chart for Threads concept
+        const ctxThreads = document
+          .getElementById("threadsBarChart")
+          .getContext("2d");
+        new Chart(ctxThreads, {
+          type: "bar",
+          data: {
+            labels: [
+              "Thread_AAPL_01 (Concluído)",
+              "Thread_TSLA_02 (Interrompido)",
+              "Thread_MSFT_03 (Executando)",
+            ],
+            datasets: [
+              {
+                label: "Eventos Persistidos (Checkpoints)",
+                data: [12, 5, 8],
+                backgroundColor: ["#4f46e5", "#d97706", "#0d9488"],
+                borderRadius: 4,
+              },
+            ],
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { display: false, grid: { display: false } },
+              y: {
+                grid: { display: false },
+                ticks: { color: "#e7e5e4", font: { size: 10 } },
+              },
+            },
+            plugins: { legend: { display: false }, tooltip: { enabled: true } },
+          },
+        });
+      }
+
+      // Functional Navigation
+      function switchTab(tabId) {
+        document
+          .querySelectorAll(".tab-content")
+          .forEach((tab) => tab.classList.remove("active"));
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.classList.remove("active", "bg-stone-700", "text-white");
+          btn.classList.add("text-stone-300");
+        });
+
+        document.getElementById(tabId).classList.add("active");
+        const activeBtn = document.querySelector(`[data-target="${tabId}"]`);
+        activeBtn.classList.remove("text-stone-300");
+        activeBtn.classList.add("active", "bg-stone-700", "text-white");
+
+        if (tabId === "topologias" && !radarChart) initCharts();
+      }
+
+      // Topology Interaction
+      function loadTopology(type) {
+        // Update buttons UI
+        document.querySelectorAll(".topo-btn").forEach((btn) => {
+          btn.classList.remove(
+            "border-2",
+            "border-teal-600",
+            "text-teal-700",
+            "bg-stone-50",
+          );
+          btn.classList.add(
+            "border",
+            "border-stone-200",
+            "text-stone-600",
+            "bg-white",
+          );
+        });
+        const activeBtn = document.getElementById(`btn-${type}`);
+        activeBtn.classList.remove(
+          "border",
+          "border-stone-200",
+          "text-stone-600",
+          "bg-white",
+        );
+        activeBtn.classList.add(
+          "border-2",
+          "border-teal-600",
+          "text-teal-700",
+          "bg-stone-50",
+        );
+
+        // Update content
+        const data = topologyData[type];
+        document.getElementById("topo-title").textContent = data.title;
+        document.getElementById("topo-analogy").textContent = data.analogy;
+        document.getElementById("topo-desc").textContent = data.desc;
+        document.getElementById("topo-pros").textContent = data.pros;
+        document.getElementById("topo-cons").textContent = data.cons;
+
+        // Re-render HTML/CSS visual
+        const visualContainer = document.getElementById("topo-visual");
+        visualContainer.innerHTML = data.renderHtml;
+        visualContainer.style.animation = "none";
+        visualContainer.offsetHeight; // trigger reflow
+        visualContainer.style.animation = "fadeIn 0.3s ease-out";
+
+        // Update Chart
+        if (radarChart) {
+          radarChart.data.datasets[0].data = data.chart;
+          radarChart.update();
+        }
+      }
+
+      // HIL Simulator State Logic
+      let simState = 0;
+      function advanceSimulation() {
+        const btn = document.getElementById("sim-btn");
+        const text = document.getElementById("sim-text");
+        const steps = [
+          document.getElementById("step-1"),
+          document.getElementById("step-2"),
+          document.getElementById("step-3"),
+          document.getElementById("step-4"),
+        ];
+
+        if (simState === 0) {
+          // To Step 2
+          steps[0].classList.replace("active", "completed");
+          steps[1].classList.add("active");
+          btn.textContent = "Acessar UI do Grafo";
+          btn.classList.replace("bg-teal-600", "bg-amber-600");
+          btn.classList.replace("hover:bg-teal-700", "hover:bg-amber-700");
+          text.innerHTML =
+            "Estado Congelado no Postgres. <br/> <span class='text-amber-500'>app.get_state(config)</span>";
+          simState++;
+        } else if (simState === 1) {
+          // To Step 3
+          steps[1].classList.replace("active", "completed");
+          steps[2].classList.add("active");
+          btn.textContent = "Aprovar Trade (Human Override)";
+          btn.classList.replace("bg-amber-600", "bg-indigo-600");
+          btn.classList.replace("hover:bg-amber-700", "hover:bg-indigo-700");
+          text.innerHTML =
+            "<span class='text-indigo-400'>app.update_state(config, {'approved': True}, as_node='Human')</span>";
+          simState++;
+        } else if (simState === 2) {
+          // To Step 4
+          steps[2].classList.replace("active", "completed");
+          steps[3].classList.add("active");
+          btn.textContent = "Reiniciar Simulação";
+          btn.classList.replace("bg-indigo-600", "bg-stone-600");
+          btn.classList.replace("hover:bg-indigo-700", "hover:bg-stone-700");
+          text.innerHTML =
+            "<span class='text-green-500'>app.stream(None, config)</span> <br/> Execução finalizada com sucesso.";
+          simState++;
+        } else {
+          // Reset
+          steps.forEach((s, idx) => {
+            s.classList.remove("active", "completed");
+            if (idx === 0) s.classList.add("active");
+          });
+          btn.textContent = "Iniciar Execução do Grafo";
+          btn.classList.replace("bg-stone-600", "bg-teal-600");
+          btn.classList.replace("hover:bg-stone-700", "hover:bg-teal-700");
+          text.innerHTML = "app.stream(initial_input, config)";
+          simState = 0;
+        }
+      }
+
+      // Initialize first tab visual
+      document.addEventListener("DOMContentLoaded", () => {
+        initCharts();
+      });
+    </script>
+  </body>
+</html>

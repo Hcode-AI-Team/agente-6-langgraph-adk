@@ -1,0 +1,1106 @@
+<!doctype html>
+<html lang="pt-BR" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dossiê Interativo: O Domínio do Claude Code (2026)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-color: #fafafa;
+        --text-main: #27272a;
+        --accent-primary: #d97757;
+        --accent-hover: #c26547;
+        --accent-secondary: #5d726f;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+      }
+
+      /* Required Chart Container Styling */
+      .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+        height: 350px;
+        max-height: 450px;
+        padding: 1rem;
+      }
+      @media (min-width: 768px) {
+        .chart-container {
+          height: 400px;
+        }
+      }
+
+      /* Custom UI Elements */
+      .glass-nav {
+        background: rgba(250, 250, 250, 0.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      }
+      .card-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px -8px rgba(217, 119, 87, 0.15);
+        border-color: var(--accent-primary);
+      }
+      .tool-active {
+        border-color: var(--accent-primary);
+        background-color: #fff2ec;
+      }
+
+      .section-gradient {
+        background: linear-gradient(180deg, #fafafa 0%, #f4f4f5 100%);
+      }
+      .terminal-block {
+        font-family: "Courier New", Courier, monospace;
+        background-color: #18181b;
+        color: #e4e4e7;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #d4d4d8;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--accent-primary);
+      }
+    </style>
+  </head>
+  <body class="antialiased text-zinc-800">
+    <!-- Chosen Palette: Warm Neutrals & Terracotta (Background: #FAFAFA, Text: #27272A, Accent: #D97757, Secondary Accent: #5D726F) -->
+    <!-- Application Structure Plan: The SPA is structured to guide the user from high-level understanding to deep technical comparison. 
+         1. Hero: Immediate value prop.
+         2. Why Claude Code Wins (NEW): A comparative section using Radar and Bar charts to prove superiority over Copilot/Cursor, addressing the user's request for competitive analysis.
+         3. Ecosystem: Interactive breakdown of where the Code tool fits among Anthropic's 5 tools.
+         4. Mechanics & Features: Grid layout for technical specifics.
+         5. Transparency (Risks & Costs): Ensuring unbiased 2026 data presentation.
+         This flow prioritizes the "Why it's better" query immediately after the introduction, maximizing impact. -->
+    <!-- Visualization & Content Choices: 
+         - Radar Chart (Chart.js): Compares Claude Code, Cursor, and Copilot across 5 dimensions (Autonomy, Context, etc.). Best for multivariate comparison.
+         - Horizontal Bar Chart (Chart.js): Shows SWE-bench resolution rates. Best for clear, ranked performance metrics.
+         - Scatter Chart (Chart.js): Maps the ecosystem on Technical vs Autonomy axes.
+         - Interactive Cards (JS Vanilla): For ecosystem details, avoiding clutter and promoting active reading.
+         - NO SVG/Mermaid used. Unicode emojis and CSS styling handle all iconography and layouts. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass-nav transition-all duration-300">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16 items-center">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">💻</span>
+            <span class="font-bold text-xl tracking-tight text-zinc-900"
+              >Dossiê Claude <span class="text-[#D97757]">2026</span></span
+            >
+          </div>
+          <div
+            class="hidden md:flex space-x-6 text-sm font-semibold text-zinc-600"
+          >
+            <a
+              href="#comparativo"
+              class="hover:text-[#D97757] transition-colors"
+              >Por que vence? 🏆</a
+            >
+            <a href="#ecosystem" class="hover:text-[#D97757] transition-colors"
+              >O Ecossistema</a
+            >
+            <a href="#config" class="hover:text-[#D97757] transition-colors"
+              >Regras e Skills</a
+            >
+            <a href="#mechanics" class="hover:text-[#D97757] transition-colors"
+              >Mecânica</a
+            >
+            <a
+              href="#transparency"
+              class="hover:text-[#D97757] transition-colors"
+              >Custos e Riscos</a
+            >
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="pt-24">
+      <!-- Hero Section -->
+      <section
+        class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 text-center"
+      >
+        <div
+          class="inline-block bg-orange-100 text-[#D97757] px-4 py-1 rounded-full text-sm font-bold mb-6 tracking-wide"
+        >
+          ATUALIZADO • ABRIL 2026
+        </div>
+        <h1
+          class="text-4xl md:text-6xl font-extrabold text-zinc-900 mb-6 leading-tight tracking-tight"
+        >
+          Pare de usar IA como Chatbot.<br />
+          <span class="text-[#D97757]">Comece a usá-la como Sistema.</span>
+        </h1>
+        <p
+          class="text-lg md:text-xl text-zinc-600 max-w-3xl mx-auto mb-10 leading-relaxed"
+        >
+          O Claude Code evoluiu. Não é mais apenas um autocompletar no seu
+          editor. É um engenheiro de software agêntico que vive no seu terminal,
+          lê todo o repositório, refatora em escala e resolve issues de ponta a
+          ponta.
+        </p>
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+          <a
+            href="#comparativo"
+            class="bg-[#D97757] hover:bg-[#c26547] text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-orange-200"
+          >
+            Ver Comparativo de Mercado
+          </a>
+          <a
+            href="#install"
+            class="bg-white border border-zinc-300 hover:border-zinc-400 text-zinc-700 font-bold py-3 px-8 rounded-xl transition-all"
+          >
+            Terminal Install
+          </a>
+        </div>
+      </section>
+
+      <!-- NOVO: Seção Comparativa (Por que o Claude Code é melhor?) -->
+      <section
+        id="comparativo"
+        class="section-gradient border-y border-zinc-200 py-20"
+      >
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-zinc-900 mb-4">
+              Por que o Claude Code supera a Concorrência?
+            </h2>
+            <p class="text-zinc-600 max-w-3xl mx-auto text-lg">
+              Nesta seção, analisamos o posicionamento do Claude Code contra
+              assistentes tradicionais (como GitHub Copilot) e IDEs focadas em
+              IA (como Cursor). A grande diferença reside na
+              <strong>arquitetura agêntica nativa de terminal</strong> aliada à
+              janela de contexto de 1 Milhão de tokens da Anthropic.
+            </p>
+          </div>
+
+          <div
+            class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16"
+          >
+            <!-- Radar Chart -->
+            <div
+              class="bg-white p-6 rounded-2xl shadow-sm border border-zinc-200"
+            >
+              <h3 class="text-xl font-bold text-center mb-2">
+                Análise Multidimensional (2026)
+              </h3>
+              <p class="text-sm text-zinc-500 text-center mb-4">
+                Comparação de capacidades essenciais para Engenharia de
+                Software.
+              </p>
+              <div class="chart-container" style="max-height: 380px">
+                <canvas id="radarChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Explanatory Content for Radar -->
+            <div class="space-y-6">
+              <div class="flex gap-4 items-start">
+                <div class="text-3xl">🧠</div>
+                <div>
+                  <h4 class="text-xl font-bold text-zinc-900">
+                    Contexto Absoluto (1M Tokens)
+                  </h4>
+                  <p class="text-zinc-600 mt-1">
+                    Diferente do Copilot que foca em arquivos abertos, o Claude
+                    Code ingere seu repositório inteiro de uma vez. Ele entende
+                    como uma mudança no backend em Python afeta um componente
+                    React no frontend.
+                  </p>
+                </div>
+              </div>
+              <div class="flex gap-4 items-start">
+                <div class="text-3xl">🤖</div>
+                <div>
+                  <h4 class="text-xl font-bold text-zinc-900">
+                    Autonomia de Terminal
+                  </h4>
+                  <p class="text-zinc-600 mt-1">
+                    O Cursor ajuda você a escrever. O Claude Code
+                    <strong>executa</strong>. Por viver na CLI, ele roda `npm
+                    run test`, lê os erros, re-escreve a lógica e repete até o
+                    teste passar, sem você encostar no mouse.
+                  </p>
+                </div>
+              </div>
+              <div class="flex gap-4 items-start">
+                <div class="text-3xl">🏗️</div>
+                <div>
+                  <h4 class="text-xl font-bold text-zinc-900">
+                    Refatoração em Larga Escala
+                  </h4>
+                  <p class="text-zinc-600 mt-1">
+                    Ideal para migrações complexas. Peça "Migre nossa API de
+                    Express para Fastify". Ele mapeia rotas, atualiza
+                    dependências e edita dezenas de arquivos em um único
+                    comando.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Benchmarks Bar Chart -->
+          <div
+            class="bg-white p-8 rounded-2xl shadow-sm border border-zinc-200"
+          >
+            <h3 class="text-2xl font-bold text-center mb-2">
+              Taxa de Resolução: SWE-bench Lite (Abril 2026)
+            </h3>
+            <p class="text-sm text-zinc-500 text-center mb-8">
+              Porcentagem de issues reais do GitHub resolvidas autonomamente.
+            </p>
+            <div class="chart-container" style="height: 300px">
+              <canvas id="benchmarkChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ecosystem Section -->
+      <section
+        id="ecosystem"
+        class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div class="mb-12">
+          <h2 class="text-3xl md:text-4xl font-bold text-zinc-900 mb-4">
+            O Ecossistema de Automação Anthropic
+          </h2>
+          <p class="text-zinc-600 max-w-3xl text-lg">
+            A Anthropic não lançou apenas o Code. Eles externalizaram as 5
+            ferramentas que usam internamente. Explore o gráfico abaixo e clique
+            nas ferramentas para entender onde cada uma se encaixa no seu fluxo
+            de trabalho.
+          </p>
+        </div>
+
+        <!-- Scatter Chart for Ecosystem -->
+        <div
+          class="bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 mb-12"
+        >
+          <h3 class="text-center font-bold text-zinc-800 mb-2">
+            Posicionamento Técnico vs Autonomia
+          </h3>
+          <div class="chart-container">
+            <canvas id="ecosystemChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Interactive Selector -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div class="lg:col-span-5 flex flex-col gap-3" id="tool-selector">
+            <!-- Buttons generated by JS -->
+          </div>
+
+          <div
+            class="lg:col-span-7 bg-white rounded-2xl shadow-lg border border-zinc-100 p-8 flex flex-col justify-center min-h-[350px] relative overflow-hidden"
+          >
+            <!-- Background Accent -->
+            <div
+              class="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-bl-full -z-10"
+            ></div>
+
+            <div id="tool-details" class="hidden z-10">
+              <div class="flex items-center gap-4 mb-4">
+                <div
+                  id="detail-icon"
+                  class="text-5xl bg-zinc-50 p-3 rounded-xl border border-zinc-100 shadow-sm"
+                ></div>
+                <h3
+                  id="detail-title"
+                  class="text-3xl font-extrabold text-zinc-900"
+                ></h3>
+              </div>
+              <p
+                id="detail-desc"
+                class="text-zinc-600 mb-8 text-lg font-medium"
+              ></p>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <div class="bg-zinc-50 p-5 rounded-xl border border-zinc-200">
+                  <h4
+                    class="font-bold text-zinc-900 mb-2 flex items-center gap-2"
+                  >
+                    <span>🎯</span> Cenário Ideal
+                  </h4>
+                  <p id="detail-where" class="text-sm text-zinc-700"></p>
+                </div>
+                <div class="bg-zinc-50 p-5 rounded-xl border border-zinc-200">
+                  <h4
+                    class="font-bold text-zinc-900 mb-2 flex items-center gap-2"
+                  >
+                    <span>👤</span> Perfil
+                  </h4>
+                  <p id="detail-best" class="text-sm text-zinc-700"></p>
+                </div>
+              </div>
+
+              <div
+                class="bg-white border border-zinc-200 rounded-xl divide-y divide-zinc-100"
+              >
+                <div class="p-4 flex gap-3 items-start">
+                  <span class="text-green-500 font-bold mt-0.5">✓</span>
+                  <div>
+                    <strong class="block text-sm text-zinc-900"
+                      >Vantagem Principal</strong
+                    >
+                    <span id="detail-pros" class="text-sm text-zinc-600"></span>
+                  </div>
+                </div>
+                <div class="p-4 flex gap-3 items-start">
+                  <span class="text-red-400 font-bold mt-0.5">⚠</span>
+                  <div>
+                    <strong class="block text-sm text-zinc-900"
+                      >Limitação</strong
+                    >
+                    <span id="detail-cons" class="text-sm text-zinc-600"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Default State -->
+            <div
+              id="tool-placeholder"
+              class="text-center text-zinc-400 flex flex-col items-center justify-center h-full"
+            >
+              <span class="text-6xl block mb-4 animate-bounce">👈</span>
+              <p class="text-xl font-medium text-zinc-500">
+                Selecione uma ferramenta na lista<br />para ver os detalhes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- NOVO: Configuração, CLAUDE.md, Rules e Skills -->
+      <section
+        id="config"
+        class="section-gradient border-y border-zinc-200 py-20"
+      >
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="mb-12 md:text-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-zinc-900 mb-4">
+              Domando o Agente: Regras e Customização
+            </h2>
+            <p class="text-zinc-600 max-w-3xl mx-auto text-lg">
+              O Claude Code não advinha os padrões da sua empresa. Ele usa
+              mecanismos rígidos de controle para garantir que o código gerado
+              respeite sua arquitetura. Entenda a tríade de configuração.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left: Selectors -->
+            <div class="lg:col-span-1 flex flex-col gap-4" id="config-selector">
+              <button
+                onclick="selectConfig('claudemd')"
+                id="btn-claudemd"
+                class="config-tab text-left p-5 rounded-xl border border-[#D97757] bg-[#FFF2EC] shadow-sm transition-all"
+              >
+                <h3
+                  class="font-bold text-lg text-zinc-900 flex items-center gap-2"
+                >
+                  <span>📜</span> O CLAUDE.md (Rules)
+                </h3>
+                <p class="text-sm text-zinc-600 mt-1">
+                  O "System Prompt" do seu repositório. Defina diretrizes
+                  absolutas de código.
+                </p>
+              </button>
+              <button
+                onclick="selectConfig('skills')"
+                id="btn-skills"
+                class="config-tab text-left p-5 rounded-xl border border-zinc-200 bg-white hover:border-[#D97757] hover:shadow-sm transition-all"
+              >
+                <h3
+                  class="font-bold text-lg text-zinc-900 flex items-center gap-2"
+                >
+                  <span>🛠️</span> Skills Customizadas
+                </h3>
+                <p class="text-sm text-zinc-600 mt-1">
+                  Ensine novos comandos e fluxos repetíveis. Expanda o que o
+                  agente pode fazer.
+                </p>
+              </button>
+              <button
+                onclick="selectConfig('cli')"
+                id="btn-cli"
+                class="config-tab text-left p-5 rounded-xl border border-zinc-200 bg-white hover:border-[#D97757] hover:shadow-sm transition-all"
+              >
+                <h3
+                  class="font-bold text-lg text-zinc-900 flex items-center gap-2"
+                >
+                  <span>⌨️</span> Comandos CLI Vitais
+                </h3>
+                <p class="text-sm text-zinc-600 mt-1">
+                  Controle de custos (/cost) e gerenciamento da janela de
+                  contexto (/compact).
+                </p>
+              </button>
+            </div>
+
+            <!-- Right: Editor/Explanation -->
+            <div class="lg:col-span-2">
+              <div
+                class="bg-[#18181B] rounded-xl shadow-xl border border-zinc-800 overflow-hidden h-full flex flex-col"
+              >
+                <!-- Editor Header -->
+                <div
+                  class="bg-zinc-900 px-4 py-3 border-b border-zinc-700 flex justify-between items-center"
+                >
+                  <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                    <div class="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                    <div class="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+                  </div>
+                  <span
+                    id="editor-filename"
+                    class="text-zinc-400 font-mono text-sm"
+                    >CLAUDE.md</span
+                  >
+                </div>
+                <!-- Explanatory Text -->
+                <div class="bg-zinc-800 p-5 border-b border-zinc-700">
+                  <h4
+                    id="config-title"
+                    class="text-white font-bold text-xl mb-2"
+                  >
+                    As Leis do Repositório
+                  </h4>
+                  <p
+                    id="config-desc"
+                    class="text-zinc-300 text-sm leading-relaxed"
+                  >
+                    Sempre que o Claude Code inicia, ele procura e lê o
+                    <code>CLAUDE.md</code> na raiz. Aqui você define as "Rules".
+                    Ele atuará como o contrato inflexível que o agente deve
+                    seguir. Se ele tentar fazer um commit sem rodar o script de
+                    teste definido aqui, ele mesmo se bloqueará.
+                  </p>
+                </div>
+                <!-- Code Snippet -->
+                <div
+                  class="p-6 font-mono text-sm overflow-x-auto text-zinc-300 flex-grow whitespace-pre"
+                  id="config-code"
+                >
+                  <span class="text-[#D97757]"
+                    ># Regras de Arquitetura (Rules)</span
+                  >
+                  - NUNCA use bibliotecas de componentes UI. Use sempre Tailwind
+                  CSS nativo. - Todas as requisições assíncronas DEVEM usar
+                  tratamento try/catch. - Nunca adicione console.log em código
+                  de produção.
+
+                  <span class="text-[#D97757]"
+                    ># Fluxo de Testes Autônomos</span
+                  >
+                  - Antes de commitar: rode `npm run test:unit`. - Se falhar:
+                  investigue o erro, corrija o arquivo e rode novamente. -
+                  Limite de tentativas automáticas: 3.
+
+                  <span class="text-[#D97757]"># Estilo e Nomenclatura</span>
+                  - Componentes React devem seguir o padrão PascalCase. -
+                  Arquivos utilitários devem estar em snake_case.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Mechanics Section -->
+      <section id="mechanics" class="bg-zinc-900 text-white py-20 mt-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="mb-16 md:text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">
+              Sob o Capô: Como o Claude Code Opera
+            </h2>
+            <p class="text-zinc-400 max-w-2xl mx-auto text-lg">
+              As funcionalidades técnicas que transformam o terminal em um
+              ambiente de desenvolvimento autônomo com os modelos Opus 4.7 e
+              Sonnet 4.6.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div
+              class="bg-zinc-800 border border-zinc-700 p-8 rounded-2xl hover:border-[#D97757] transition-colors"
+            >
+              <div class="text-4xl mb-4">🤖</div>
+              <h3 class="text-xl font-bold mb-3">
+                Model Context Protocol (MCP)
+              </h3>
+              <p class="text-zinc-400 text-sm leading-relaxed">
+                O Claude Code pode ser estendido nativamente com servidores MCP.
+                Isso permite que ele controle o navegador para testes E2E ou
+                acesse bancos de dados corporativos de forma segura durante o
+                desenvolvimento.
+              </p>
+            </div>
+            <div
+              class="bg-zinc-800 border border-zinc-700 p-8 rounded-2xl hover:border-[#D97757] transition-colors relative overflow-hidden"
+            >
+              <div
+                class="absolute top-4 right-4 bg-[#D97757] text-white text-xs font-bold px-2 py-1 rounded"
+              >
+                NOVO
+              </div>
+              <div class="text-4xl mb-4">⚡</div>
+              <h3 class="text-xl font-bold mb-3">Routines (Rotinas)</h3>
+              <p class="text-zinc-400 text-sm leading-relaxed">
+                Automatize tarefas repetitivas. Configure rotinas baseadas em
+                webhooks do GitHub para que o Claude revise Pull Requests,
+                formate código ou gere documentação automaticamente, sem
+                intervenção humana.
+              </p>
+            </div>
+            <div
+              class="bg-zinc-800 border border-zinc-700 p-8 rounded-2xl hover:border-[#D97757] transition-colors"
+            >
+              <div class="text-4xl mb-4">🎛️</div>
+              <h3 class="text-xl font-bold mb-3">Effort Levels Variáveis</h3>
+              <p class="text-zinc-400 text-sm leading-relaxed">
+                Controle o nível de raciocínio da IA (Low, Medium, High, xHigh,
+                Max). Gaste menos tokens em tarefas triviais e use `Max` para
+                arquitetura complexa ou bugs difíceis.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Transparency, Pricing & Installation -->
+      <section
+        id="transparency"
+        class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-4xl font-bold text-zinc-900 mb-4">
+            Transparência Total: Custos e Riscos
+          </h2>
+          <p class="text-zinc-600 max-w-3xl mx-auto text-lg">
+            Sistemas agênticos trazem riscos proporcionais ao seu poder. Entenda
+            os custos reais e os alertas de segurança reportados pela comunidade
+            em 2026.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+          <!-- Pricing Chart -->
+          <div
+            class="bg-white rounded-2xl shadow-sm border border-zinc-200 p-8"
+          >
+            <h3 class="text-xl font-bold text-zinc-900 mb-2">
+              Estrutura de Custos Mensais
+            </h3>
+            <p class="text-sm text-zinc-500 mb-6">
+              Nota: O uso intensivo (Agentic Loops) pode gerar custos extras de
+              API de $15-$30 diários se mal supervisionado.
+            </p>
+            <div class="chart-container" style="height: 250px">
+              <canvas id="pricingChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Risks Grid -->
+          <div class="flex flex-col justify-center gap-6">
+            <div
+              class="bg-orange-50 border-l-4 border-orange-500 p-5 rounded-r-xl"
+            >
+              <h4
+                class="font-bold text-orange-900 mb-1 flex items-center gap-2"
+              >
+                <span>🔥</span> Burn Rate de Tokens
+              </h4>
+              <p class="text-sm text-orange-800">
+                Se deixado em loop sem supervisão tentando compilar um código
+                muito quebrado, o agente pode drenar orçamentos rapidamente
+                devido às múltiplas tentativas.
+              </p>
+            </div>
+            <div
+              class="bg-zinc-100 border-l-4 border-zinc-500 p-5 rounded-r-xl"
+            >
+              <h4 class="font-bold text-zinc-900 mb-1 flex items-center gap-2">
+                <span>🦥</span> A "Preguiça" do Modelo
+              </h4>
+              <p class="text-sm text-zinc-700">
+                Com as atualizações recentes de redução de contexto oculto, o
+                modelo às vezes pede permissões excessivas ao invés de agir
+                autonomamente em tarefas muito longas.
+              </p>
+            </div>
+            <div class="bg-red-50 border-l-4 border-red-500 p-5 rounded-r-xl">
+              <h4 class="font-bold text-red-900 mb-1 flex items-center gap-2">
+                <span>🛡️</span> Riscos de Segurança
+              </h4>
+              <p class="text-sm text-red-800">
+                Por ter acesso direto ao File-System, é vital revisar as
+                alterações (via git diff) antes do commit. Vulnerabilidades
+                injetadas por prompts maliciosos (Prompt Injection) são um risco
+                real.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Install Terminal -->
+        <div id="install" class="max-w-3xl mx-auto">
+          <h3 class="text-center font-bold text-xl text-zinc-800 mb-6">
+            Pronto para começar?
+          </h3>
+          <div
+            class="terminal-block rounded-2xl shadow-2xl overflow-hidden border border-zinc-700"
+          >
+            <div
+              class="bg-[#27272A] px-4 py-3 flex items-center gap-2 border-b border-zinc-700"
+            >
+              <div class="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+              <div class="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+              <div class="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+              <span class="text-zinc-400 text-xs ml-2"
+                >bash - claude-code-install</span
+              >
+            </div>
+            <div class="p-6 text-sm leading-loose">
+              <span class="text-zinc-500"
+                ># 1. Instalação global (MacOS / Linux)</span
+              ><br />
+              <span class="text-green-400">$</span>
+              <span class="text-white font-semibold"
+                >curl -fsSL https://claude.ai/install.sh | bash</span
+              ><br /><br />
+
+              <span class="text-zinc-500"># 2. Navegue até seu projeto</span
+              ><br />
+              <span class="text-green-400">$</span>
+              <span class="text-white font-semibold"
+                >cd meu-projeto-complexo</span
+              ><br /><br />
+
+              <span class="text-zinc-500"># 3. Acorde o Agente</span><br />
+              <span class="text-green-400">$</span>
+              <span class="text-white font-semibold">claude</span><br />
+              <span class="text-[#D97757] mt-2 block opacity-90"
+                >» Claude Code (Opus 4.7) initialized. Reading repository
+                context... Awaiting instructions.</span
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer
+      class="bg-zinc-900 py-10 text-center text-zinc-500 text-sm border-t border-zinc-800"
+    >
+      <p class="mb-2">
+        Baseado no Dossiê de Atualização Anthropic - Abril 2026.
+      </p>
+      <p>
+        Projetado para visualização analítica e tomada de decisão arquitetural.
+      </p>
+    </footer>
+
+    <!-- JS Logic & Data -->
+    <script>
+      // Ecosystem Data
+      const toolsData = [
+        {
+          id: "chat",
+          name: "Claude Chat",
+          icon: "💬",
+          desc: "Assistente conversacional para pensamento e análise diária.",
+          where: "Rascunhos, brainstorms, explicação de conceitos.",
+          best: "Qualquer usuário que precise de um parceiro intelectual.",
+          pros: "Zero setup, respostas instantâneas.",
+          cons: "Recomenda mas não executa.",
+          tech: 1,
+          auto: 2,
+        },
+        {
+          id: "code",
+          name: "Claude Code",
+          icon: "💻",
+          desc: "Agente autônomo de programação CLI que refatora e debuga em escala.",
+          where: "Terminal, ambientes de desenvolvimento, CI/CD.",
+          best: "Desenvolvedores e Engenheiros de Software.",
+          pros: "Contexto massivo, loops autônomos de correção.",
+          cons: "Custo de tokens, exige revisão técnica.",
+          tech: 5,
+          auto: 5,
+        },
+        {
+          id: "projects",
+          name: "Claude Projects",
+          icon: "🗂️",
+          desc: "Workspace persistente com memória de documentos.",
+          where: "Bases de conhecimento de equipe, pesquisa profunda.",
+          best: "Pesquisadores e gerentes de produto.",
+          pros: "Contexto não se perde entre conversas.",
+          cons: "Exige organização inicial de arquivos.",
+          tech: 2,
+          auto: 3,
+        },
+        {
+          id: "skills",
+          name: "Claude Skills",
+          icon: "⚙️",
+          desc: "Instruções rígidas para automatizar tarefas específicas sempre da mesma forma.",
+          where: "Geração de relatórios, formatação padrão de marca.",
+          best: "Equipes de operações e marketing corporativo.",
+          pros: "Consistência absoluta no output.",
+          cons: "Rígido, ruim para exploração criativa.",
+          tech: 3,
+          auto: 3.5,
+        },
+        {
+          id: "cowork",
+          name: "Claude Cowork",
+          icon: "⚡",
+          desc: "App Desktop para automação de arquivos e processos entre softwares.",
+          where: "Renomear arquivos em lote, extrair dados de PDF para Excel.",
+          best: "Analistas financeiros, RH e não-desenvolvedores.",
+          pros: "Automação sem saber programar (No-code).",
+          cons: "Pode falhar em UIs não padronizadas.",
+          tech: 1,
+          auto: 4.5,
+        },
+      ];
+
+      // Config Data (NEW)
+      const configData = {
+        claudemd: {
+          filename: "CLAUDE.md",
+          title: "As Leis do Repositório (Rules)",
+          desc: "Sempre que o Claude Code inicia, ele procura e lê o `CLAUDE.md` na raiz. Aqui você define as 'Rules'. Ele atua como o contrato inflexível que o agente deve seguir. Se ele tentar fazer um commit sem rodar o script de teste definido aqui, ele mesmo se bloqueará e tentará corrigir o erro.",
+          code: `<span class="text-[#D97757]"># Regras de Arquitetura (Rules)</span>\n- NUNCA use bibliotecas de componentes UI. Use sempre Tailwind CSS nativo.\n- Todas as requisições assíncronas DEVEM usar tratamento try/catch.\n- Nunca adicione console.log em código de produção.\n\n<span class="text-[#D97757]"># Fluxo de Testes Autônomos</span>\n- Antes de commitar: rode \`npm run test:unit\`.\n- Se falhar: investigue o erro, corrija o arquivo e rode novamente.\n- Limite de tentativas automáticas: 3.\n\n<span class="text-[#D97757]"># Estilo e Nomenclatura</span>\n- Componentes React devem seguir o padrão PascalCase.`,
+        },
+        skills: {
+          filename: "SKILLS.md / MCP",
+          title: "Ensinando Novos Truques",
+          desc: "As Skills são um subconjunto de ferramentas corporativas. Em vez de escrever scripts complexos, você descreve um fluxo passo-a-passo. Aliado ao Model Context Protocol (MCP), as Skills permitem que o Claude acesse bases do Jira, leia documentos no Google Drive ou faça deploys estruturados usando comandos naturais.",
+          code: `<span class="text-[#D97757]"># Skill: Gerar Relatório de Cobertura</span>\n\n<span class="text-green-400">Trigger:</span> Quando eu disser "Relatório de Testes"\n\n<span class="text-green-400">Steps:</span>\n1. Execute \`npm run coverage\`.\n2. Leia a saída do diretório \`/coverage/lcov-report\`.\n3. Analise quais componentes têm cobertura menor que 80%.\n4. Gere um arquivo Markdown em \`/docs/reports\` detalhando os pontos fracos.\n5. Crie issues autônomas no GitHub para cada arquivo não coberto (usando a integração MCP do Github).`,
+        },
+        cli: {
+          filename: "Terminal (Comandos /)",
+          title: "Comandos Essenciais de Operação",
+          desc: "Com 1 Milhão de tokens de contexto, manter a IA focada e não estourar o limite do cartão de crédito exige gestão de estado. Comandos com barra (/) no terminal controlam o ciclo de vida do agente instantaneamente.",
+          code: `<span class="text-zinc-500"># Verifica quanto o loop atual custou em tokens e dólares</span>\n<span class="text-[#D97757]">/cost</span>\n<span class="text-zinc-400">&gt; Current Session: 145,000 In / 2,400 Out. Cost: $0.78</span>\n\n<span class="text-zinc-500"># Resume o contexto atual para liberar espaço na memória (Crucial)</span>\n<span class="text-[#D97757]">/compact</span>\n<span class="text-zinc-400">&gt; Compacting 500k tokens into semantic summary... Saved 420k tokens.</span>\n\n<span class="text-zinc-500"># Remove o histórico da conversa e limpa arquivos carregados</span>\n<span class="text-[#D97757]">/clear</span>\n\n<span class="text-zinc-500"># Executa revisão profunda do código modificado via IA</span>\n<span class="text-[#D97757]">/review --strict</span>`,
+        },
+      };
+
+      function selectConfig(id) {
+        // Reset tab styles
+        document.querySelectorAll(".config-tab").forEach((el) => {
+          el.classList.remove("border-[#D97757]", "bg-[#FFF2EC]");
+          el.classList.add("border-zinc-200", "bg-white");
+        });
+
+        // Set active tab
+        const btn = document.getElementById("btn-" + id);
+        btn.classList.remove("border-zinc-200", "bg-white");
+        btn.classList.add("border-[#D97757]", "bg-[#FFF2EC]");
+
+        // Update content
+        const data = configData[id];
+        document.getElementById("editor-filename").textContent = data.filename;
+        document.getElementById("config-title").textContent = data.title;
+        document.getElementById("config-desc").textContent = data.desc;
+
+        const codeBlock = document.getElementById("config-code");
+        codeBlock.style.opacity = 0;
+        setTimeout(() => {
+          codeBlock.innerHTML = data.code;
+          codeBlock.style.opacity = 1;
+          codeBlock.style.transition = "opacity 0.3s ease";
+        }, 150);
+      }
+
+      // 1. Initialize Interactive Ecosystem Cards
+      function renderToolSelector() {
+        const container = document.getElementById("tool-selector");
+        toolsData.forEach((tool) => {
+          const btn = document.createElement("button");
+          btn.className =
+            "card-hover flex items-center gap-4 w-full p-4 rounded-xl border border-zinc-200 bg-white text-left";
+          btn.onclick = () => selectTool(tool.id, btn);
+          btn.innerHTML = `
+                    <span class="text-3xl bg-zinc-50 p-2 rounded-lg border border-zinc-100">${tool.icon}</span>
+                    <div>
+                        <div class="font-bold text-zinc-900 text-lg">${tool.name}</div>
+                    </div>
+                `;
+          container.appendChild(btn);
+        });
+      }
+
+      function selectTool(id, btnElement) {
+        document.querySelectorAll("#tool-selector button").forEach((el) => {
+          el.classList.remove("tool-active", "shadow-md");
+        });
+        btnElement.classList.add("tool-active", "shadow-md");
+
+        const tool = toolsData.find((t) => t.id === id);
+
+        document.getElementById("tool-placeholder").classList.add("hidden");
+        const detailsDiv = document.getElementById("tool-details");
+        detailsDiv.classList.remove("hidden");
+
+        // Simple fade-in animation
+        detailsDiv.style.opacity = 0;
+        setTimeout(() => {
+          detailsDiv.style.opacity = 1;
+          detailsDiv.style.transition = "opacity 0.3s ease";
+        }, 10);
+
+        document.getElementById("detail-icon").textContent = tool.icon;
+        document.getElementById("detail-title").textContent = tool.name;
+        document.getElementById("detail-desc").textContent = tool.desc;
+        document.getElementById("detail-where").textContent = tool.where;
+        document.getElementById("detail-best").textContent = tool.best;
+        document.getElementById("detail-pros").textContent = tool.pros;
+        document.getElementById("detail-cons").textContent = tool.cons;
+      }
+
+      // 2. Initialize All Chart.js Charts
+      function initCharts() {
+        // Chart Defaults for consistent styling
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = "#52525b"; // zinc-600
+
+        // --- A. Radar Chart (Comparison) ---
+        const ctxRadar = document.getElementById("radarChart").getContext("2d");
+        new Chart(ctxRadar, {
+          type: "radar",
+          data: {
+            labels: [
+              "Autonomia Agêntica",
+              "Refatoração Complexa",
+              "Tamanho do Contexto",
+              "Velocidade/UX",
+              "Independência de IDE",
+            ],
+            datasets: [
+              {
+                label: "Claude Code",
+                data: [9, 9, 10, 8, 10],
+                backgroundColor: "rgba(217, 119, 87, 0.2)", // Accent
+                borderColor: "#D97757",
+                borderWidth: 2,
+                pointBackgroundColor: "#D97757",
+              },
+              {
+                label: "Cursor (IDE)",
+                data: [7, 7, 8, 10, 2],
+                backgroundColor: "rgba(93, 114, 111, 0.2)", // Secondary
+                borderColor: "#5D726F",
+                borderWidth: 2,
+                pointBackgroundColor: "#5D726F",
+              },
+              {
+                label: "GitHub Copilot",
+                data: [3, 4, 5, 9, 2],
+                backgroundColor: "rgba(161, 161, 170, 0.2)", // Zinc
+                borderColor: "#a1a1aa",
+                borderWidth: 2,
+                pointBackgroundColor: "#a1a1aa",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              r: {
+                min: 0,
+                max: 10,
+                ticks: { display: false },
+                grid: { color: "rgba(0,0,0,0.05)" },
+                pointLabels: { font: { size: 11, weight: "600" } },
+              },
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: { usePointStyle: true, boxWidth: 8 },
+              },
+            },
+          },
+        });
+
+        // --- B. Horizontal Bar Chart (Benchmarks) ---
+        const ctxBench = document
+          .getElementById("benchmarkChart")
+          .getContext("2d");
+        new Chart(ctxBench, {
+          type: "bar",
+          data: {
+            labels: [
+              "Claude Code (Opus 4.7)",
+              "Devin",
+              "Cursor (Agent Mode)",
+              "Copilot Workspace",
+            ],
+            datasets: [
+              {
+                label: "Taxa de Resolução (%)",
+                data: [58, 52, 48, 35],
+                backgroundColor: ["#D97757", "#e4e4e7", "#e4e4e7", "#e4e4e7"],
+                borderRadius: 6,
+                barPercentage: 0.7,
+              },
+            ],
+          },
+          options: {
+            indexAxis: "y", // Makes it horizontal
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: { label: (ctx) => `${ctx.raw}% resolvido` },
+              },
+            },
+            scales: {
+              x: {
+                min: 0,
+                max: 70,
+                title: {
+                  display: true,
+                  text: "Issues do SWE-bench Resolvidas (%)",
+                },
+              },
+              y: {
+                grid: { display: false },
+                ticks: { font: { weight: "bold" } },
+              },
+            },
+          },
+        });
+
+        // --- C. Scatter Chart (Ecosystem Map) ---
+        const ctxEco = document
+          .getElementById("ecosystemChart")
+          .getContext("2d");
+        new Chart(ctxEco, {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: "Ferramentas Anthropic",
+                data: toolsData.map((t) => ({ x: t.tech, y: t.auto, tool: t })),
+                backgroundColor: (ctx) => {
+                  // Highlight Claude Code
+                  const item = ctx.raw;
+                  return item && item.tool.id === "code"
+                    ? "#D97757"
+                    : "#5D726F";
+                },
+                pointRadius: (ctx) => {
+                  const item = ctx.raw;
+                  return item && item.tool.id === "code" ? 12 : 8;
+                },
+                pointHoverRadius: 14,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: "rgba(0,0,0,0.8)",
+                callbacks: {
+                  label: (ctx) => ` ${ctx.raw.tool.name}`,
+                },
+              },
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: "← Mais Simples | Nível Técnico Exigido | Mais Complexo →",
+                },
+                min: 0,
+                max: 6,
+                ticks: { display: false },
+                grid: { drawBorder: false },
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: "← Chat | Autonomia da Ferramenta | Agente →",
+                },
+                min: 0,
+                max: 6,
+                ticks: { display: false },
+                grid: { drawBorder: false },
+              },
+            },
+          },
+        });
+
+        // --- D. Bar Chart (Pricing) ---
+        const ctxPrice = document
+          .getElementById("pricingChart")
+          .getContext("2d");
+        new Chart(ctxPrice, {
+          type: "bar",
+          data: {
+            labels: ["Free", "Pro", "Max (5x)", "Max (20x)"],
+            datasets: [
+              {
+                label: "Preço Mensal (US$)",
+                data: [0, 20, 100, 200],
+                backgroundColor: ["#f4f4f5", "#a1a1aa", "#D97757", "#9c543c"],
+                borderRadius: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
+              x: { grid: { display: false } },
+            },
+          },
+        });
+      }
+
+      // Initialize App
+      window.addEventListener("DOMContentLoaded", () => {
+        renderToolSelector();
+        initCharts();
+      });
+    </script>
+  </body>
+</html>
