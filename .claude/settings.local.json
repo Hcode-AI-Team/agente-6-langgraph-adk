@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -v \"^d.*\\\\.$\")",
+      "Bash(pip show *)",
+      "Bash(python -c \"import langgraph.checkpoint.sqlite\")",
+      "Bash(python -c \"from langgraph.checkpoint.memory import MemorySaver; print\\('MemorySaver OK'\\)\")",
+      "Bash(pip list *)",
+      "Bash(python -c \"import langgraph.checkpoint; print\\(dir\\(langgraph.checkpoint\\)\\)\")",
+      "Bash(pip install *)",
+      "Bash(python -c \"from langgraph.checkpoint.sqlite import SqliteSaver; print\\('SqliteSaver OK'\\)\")",
+      "Bash(python -m pytest tests/integration/test_graph.py tests/unit/test_router.py -v --tb=short)",
+      "Bash(python -m pytest tests/integration/test_graph.py -v --tb=short)",
+      "Bash(python -m pytest tests/ -v --tb=short)"
+    ]
+  }
+}

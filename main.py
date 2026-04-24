@@ -1,15 +1,16 @@
 """CLI entry point for the Banco BV Credit-Policy Orchestrator.
 
 Usage:
-    python main.py --question "Can I approve R$10M working capital for client X?"
-    python main.py                      # interactive mode
-    python main.py -q "..." --verbose   # show per-node execution trace
+    python main.py --question "Posso aprovar R$10M de capital de giro para cliente X?"
+    python main.py                           # interactive mode (gera thread_id automático)
+    python main.py -q "..." --verbose        # mostra trace por nó
+    python main.py -q "..." --thread my-id  # retoma sessão persistida pelo thread_id
 """
 
 from __future__ import annotations
 
 import argparse
-import sys
+import uuid
 import warnings
 
 from dotenv import load_dotenv
@@ -18,10 +19,6 @@ from dotenv import load_dotenv
 # ADK_SUPPRESS_A2A_EXPERIMENTAL_FEATURE_WARNINGS are visible to its decorators.
 load_dotenv(override=False)
 
-# Silence the once-per-process "[EXPERIMENTAL] feature FeatureName.PLUGGABLE_AUTH
-# is enabled" UserWarning emitted by google.adk.features._feature_decorator.
-# The feature itself is left untouched (disabling it could break auth flows);
-# only the noisy banner is filtered out.
 warnings.filterwarnings(
     "ignore",
     message=r".*\[EXPERIMENTAL\] feature FeatureName\.PLUGGABLE_AUTH.*",
@@ -38,7 +35,6 @@ from rich.table import Table  # noqa: E402
 from src.config import Settings, get_settings  # noqa: E402
 from src.graph import get_app, run  # noqa: E402
 from src.logging_config import get_logger  # noqa: E402
-from src.state import OrchestratorState  # noqa: E402
 
 logger = get_logger(__name__)
 console = Console()
@@ -50,21 +46,28 @@ def _parse_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--question",
-        "-q",
+        "--question", "-q",
         type=str,
-        help="Question from the account manager.  Omit to enter interactive mode.",
+        help="Pergunta do gestor de contas. Omita para modo interativo.",
     )
     parser.add_argument(
-        "--verbose",
-        "-v",
+        "--verbose", "-v",
         action="store_true",
-        help="Print per-node state delta as the graph executes (streaming mode).",
+        help="Imprime o delta de estado de cada nó durante a execução (streaming).",
+    )
+    parser.add_argument(
+        "--thread",
+        type=str,
+        default=None,
+        help=(
+            "Thread ID para retomar uma sessão persistida. "
+            "Se omitido, um novo ID é gerado automaticamente."
+        ),
     )
     return parser.parse_args()
 
 
-def _print_header(settings: Settings) -> None:
+def _print_header(settings: Settings, thread_id: str) -> None:
     table = Table.grid(padding=(0, 2))
     table.add_column(style="bold cyan", no_wrap=True)
     table.add_column(style="white")
@@ -73,39 +76,42 @@ def _print_header(settings: Settings) -> None:
     table.add_row("LLM model", str(settings.vertex_llm_model))
     table.add_row("Embedding", str(settings.vertex_embedding_model))
     table.add_row("Agent Card", str(settings.adk_risk_agent_card_url))
+    table.add_row("Checkpointer DB", str(settings.checkpointer_db_path))
+    table.add_row("Thread ID", f"[bold yellow]{thread_id}[/]")
 
     console.print(
         Panel(
             table,
             title="[bold green]Banco BV Credit-Policy Orchestrator[/]",
-            subtitle="[dim]LangGraph + Vertex RAG + ADK A2A[/]",
+            subtitle="[dim]LangGraph + Vertex RAG + ADK A2A + SQLite Checkpointer[/]",
             border_style="green",
         )
     )
 
 
-def _run_with_trace(question: str) -> str:
+def _run_with_trace(question: str, thread_id: str) -> str:
     """Execute the graph in streaming mode, printing each node's state delta."""
     app = get_app()
+    config = {"configurable": {"thread_id": thread_id}}
     console.print(Rule("[bold yellow]execution trace[/]", style="yellow"))
-    accumulated: dict = {"question": question}
+    final_response = ""
 
-    for step in app.stream(OrchestratorState(question=question)):
+    for step in app.stream({"question": question}, config=config):
         for node_name, delta in step.items():
             keys = sorted(delta.keys()) if isinstance(delta, dict) else []
             console.print(f"  [cyan]{node_name}[/]: [dim]{keys}[/]")
-            if isinstance(delta, dict):
-                accumulated.update(delta)
+            if isinstance(delta, dict) and "final_response" in delta:
+                final_response = delta["final_response"]
 
-    return accumulated.get("final_response", "")
+    return final_response
 
 
-def _execute(question: str, *, verbose: bool) -> None:
+def _execute(question: str, *, verbose: bool, thread_id: str) -> None:
     """Run the orchestrator and print the final response."""
     if verbose:
-        response = _run_with_trace(question)
+        response = _run_with_trace(question, thread_id)
     else:
-        state: OrchestratorState = run(question)
+        state = run(question, thread_id)
         response = state.final_response
 
     console.print()
@@ -137,13 +143,21 @@ def main() -> int:
         )
         return 2
 
-    _print_header(settings)
+    # Use the provided thread_id or generate one for this session.
+    # In interactive mode the same thread persists for the entire session,
+    # enabling the checkpointer to accumulate conversation history.
+    thread_id = args.thread or uuid.uuid4().hex[:12]
+    _print_header(settings, thread_id)
 
     if args.question:
-        _execute(args.question, verbose=args.verbose)
+        _execute(args.question, verbose=args.verbose, thread_id=thread_id)
         return 0
 
-    console.print("[bold]Interactive mode[/] — type [red]'exit'[/] to quit.\n")
+    console.print(
+        f"[bold]Interactive mode[/] — sessão [yellow]{thread_id}[/] "
+        f"| use [dim]--thread {thread_id}[/] para retomar depois\n"
+        "Digite [red]'exit'[/] para sair.\n"
+    )
     while True:
         try:
             question = console.input("[bold cyan]Manager>[/] ").strip()
@@ -154,7 +168,7 @@ def main() -> int:
             continue
         if question.lower() in {"exit", "quit", "sair"}:
             return 0
-        _execute(question, verbose=args.verbose)
+        _execute(question, verbose=args.verbose, thread_id=thread_id)
 
 
 if __name__ == "__main__":

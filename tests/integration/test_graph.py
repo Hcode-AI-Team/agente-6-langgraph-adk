@@ -2,29 +2,36 @@
 
 MOCKING STRATEGY
 ----------------
-Integration tests verify the GRAPH FLOW (correct routing, state propagation)
-not the internals of individual nodes.  We therefore mock the four node
-functions in the namespace where they are USED — `src.graph` — which is the
-module that imports them and passes them to `add_node`.
+Integration tests verify GRAPH FLOW (correct routing, state propagation)
+not the internals of individual nodes.  We mock nodes in the `src.graph`
+namespace — where they are captured by `build_graph()` / `add_node`.
 
-Why `src.graph.*` and not `src.nodes.evaluator.*`?
-LangGraph compiles the graph by capturing the function OBJECTS passed to
-`add_node`.  When `mocker.patch("src.graph.node_evaluator", …)` is active
-and `build_graph()` is called afterwards (we clear `get_app`'s lru_cache
-before each test), `build_graph` picks up the patched object.  Patching
-inside `src.nodes.evaluator` would change the original module's binding but
-not the local binding that `graph.py` imported at module-load time.
+Checkpointer:
+    Tests use `MemorySaver` (in-memory) injected by patching `_get_checkpointer`
+    so no SQLite file is created and each test class starts with a clean slate.
 
-The exception is `query_risk_agent` (ADK A2A client), which `node_risk_agent`
-looks up at call time, so we patch it in `src.nodes.risk_agent`.
+Thread IDs:
+    Each test passes a unique `thread_id` to `run()`.  Uniqueness prevents
+    checkpoint bleed between tests that share the same MemorySaver instance.
+
+Summarizer:
+    `node_summarizer` is NOT mocked — it runs unconditionally but exits
+    immediately when `len(recent_messages) < threshold` (always true here
+    since synthesis is mocked and returns no messages).
 """
 
 from __future__ import annotations
 
-import pytest
+import uuid
 
-from src.graph import build_graph, get_app, run
-from src.state import OrchestratorState, RAGDocument
+import pytest
+from langgraph.checkpoint.memory import MemorySaver
+
+from src.graph import _get_checkpointer, build_graph, run
+
+# get_app is not cached in the new design (checkpointer is cached separately)
+from src.graph import get_app
+from src.state import ConversationMessage, OrchestratorState, RAGDocument
 
 # ---------------------------------------------------------------------------
 # Shared sample data
@@ -46,7 +53,6 @@ _SAMPLE_DOCS = [
 
 
 def _patch_rag(mocker, docs=None):
-    """Replace node_rag_retrieval with a stub that returns fixed documents."""
     chosen = docs if docs is not None else _SAMPLE_DOCS
     return mocker.patch(
         "src.graph.node_rag_retrieval",
@@ -55,7 +61,6 @@ def _patch_rag(mocker, docs=None):
 
 
 def _patch_evaluator(mocker, requires_escalation: bool):
-    """Replace node_evaluator with a stub that returns a predetermined decision."""
     return mocker.patch(
         "src.graph.node_evaluator",
         return_value={
@@ -66,24 +71,23 @@ def _patch_evaluator(mocker, requires_escalation: bool):
 
 
 def _patch_synthesis(mocker, response: str = "Mocked final response."):
-    """Replace node_synthesis with a stub that returns a fixed final response."""
     return mocker.patch(
         "src.graph.node_synthesis",
-        return_value={"final_response": response},
+        return_value={"final_response": response, "recent_messages": []},
     )
 
 
 def _patch_risk_agent(mocker, response: str = "Mocked risk assessment."):
-    """Patch the A2A client call inside node_risk_agent (not the node itself).
-
-    We leave node_risk_agent un-mocked so the real node logic (payload
-    construction, error handling) is exercised; only the network call is
-    stubbed out.
-    """
+    """Patch the A2A client call inside node_risk_agent (not the node itself)."""
     return mocker.patch(
         "src.nodes.risk_agent.query_risk_agent",
         return_value=response,
     )
+
+
+def _tid() -> str:
+    """Generate a unique thread ID so tests don't share checkpoint state."""
+    return uuid.uuid4().hex[:8]
 
 
 # ---------------------------------------------------------------------------
@@ -100,19 +104,44 @@ class TestGraphTopology:
         assert "evaluator" in node_names
         assert "risk_agent" in node_names
         assert "synthesis" in node_names
+        assert "summarizer" in node_names
 
     def test_entry_point_is_rag_retrieval(self):
         g = build_graph()
-        compiled = g.compile()
-        graph_def = compiled.get_graph()
+        graph_def = g.compile().get_graph()
         start_edges = [e for e in graph_def.edges if e.source == "__start__"]
         assert any(e.target == "rag_retrieval" for e in start_edges)
 
-    def test_synthesis_has_edge_to_end(self):
+    def test_synthesis_leads_to_summarizer(self):
         g = build_graph()
         graph_def = g.compile().get_graph()
         synthesis_edges = [e for e in graph_def.edges if e.source == "synthesis"]
-        assert any(e.target == "__end__" for e in synthesis_edges)
+        assert any(e.target == "summarizer" for e in synthesis_edges)
+
+    def test_summarizer_has_edge_to_end(self):
+        g = build_graph()
+        graph_def = g.compile().get_graph()
+        summarizer_edges = [e for e in graph_def.edges if e.source == "summarizer"]
+        assert any(e.target == "__end__" for e in summarizer_edges)
+
+
+# ---------------------------------------------------------------------------
+# Shared fixture: swap SQLite checkpointer for in-memory MemorySaver
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=False)
+def _mem_checkpointer(mocker):
+    """Replace the SQLite checkpointer with MemorySaver for all execution tests.
+
+    _get_checkpointer is cached with lru_cache; we clear it before and after so
+    each test class gets a fresh MemorySaver (no checkpoint bleed between tests).
+    get_app is NOT cached — it calls _get_checkpointer on every invocation.
+    """
+    _get_checkpointer.cache_clear()
+    mocker.patch("src.graph._get_checkpointer", return_value=MemorySaver())
+    yield
+    _get_checkpointer.cache_clear()
 
 
 # ---------------------------------------------------------------------------
@@ -122,20 +151,15 @@ class TestGraphTopology:
 
 class TestDirectSynthesisPath:
     @pytest.fixture(autouse=True)
-    def _clear_app_cache(self):
-        # Clear cache BEFORE the test so that build_graph() is called with the
-        # mocks already active (mocks are applied by pytest-mock before the
-        # test body runs, but after fixtures have been set up).
-        get_app.cache_clear()
-        yield
-        get_app.cache_clear()
+    def _setup(self, _mem_checkpointer):
+        pass
 
     def test_final_response_populated(self, mocker):
         _patch_rag(mocker)
         _patch_evaluator(mocker, requires_escalation=False)
         _patch_synthesis(mocker, response="Policy allows R$5M.")
 
-        state = run("What is the credit limit?")
+        state = run("What is the credit limit?", _tid())
 
         assert state.final_response == "Policy allows R$5M."
 
@@ -144,9 +168,8 @@ class TestDirectSynthesisPath:
         _patch_evaluator(mocker, requires_escalation=False)
         _patch_synthesis(mocker)
 
-        state = run("Simple policy question?")
+        state = run("Simple policy question?", _tid())
 
-        # node_risk_agent must NOT have been called on this path.
         assert state.risk_assessment_response is None
 
     def test_rag_context_propagated_to_synthesis(self, mocker):
@@ -154,9 +177,8 @@ class TestDirectSynthesisPath:
         _patch_evaluator(mocker, requires_escalation=False)
         mock_synthesis = _patch_synthesis(mocker)
 
-        run("Credit limit?")
+        run("Credit limit?", _tid())
 
-        # Synthesis must have been called with a state that contains the docs.
         state_arg: OrchestratorState = mock_synthesis.call_args[0][0]
         assert len(state_arg.rag_context) == len(_SAMPLE_DOCS)
         assert any("R$5M" in doc.text for doc in state_arg.rag_context)
@@ -166,7 +188,7 @@ class TestDirectSynthesisPath:
         _patch_evaluator(mocker, requires_escalation=False)
         mock_synthesis = _patch_synthesis(mocker)
 
-        run("My specific question?")
+        run("My specific question?", _tid())
 
         state_arg: OrchestratorState = mock_synthesis.call_args[0][0]
         assert state_arg.question == "My specific question?"
@@ -179,10 +201,8 @@ class TestDirectSynthesisPath:
 
 class TestRiskAgentPath:
     @pytest.fixture(autouse=True)
-    def _clear_app_cache(self):
-        get_app.cache_clear()
-        yield
-        get_app.cache_clear()
+    def _setup(self, _mem_checkpointer):
+        pass
 
     def test_risk_assessment_response_populated(self, mocker):
         _patch_rag(mocker)
@@ -190,7 +210,7 @@ class TestRiskAgentPath:
         _patch_risk_agent(mocker, response="High risk: defer to committee.")
         _patch_synthesis(mocker)
 
-        state = run("R$50M restructuring?")
+        state = run("R$50M restructuring?", _tid())
 
         assert state.risk_assessment_response == "High risk: defer to committee."
 
@@ -200,7 +220,7 @@ class TestRiskAgentPath:
         _patch_risk_agent(mocker)
         _patch_synthesis(mocker, response="Based on risk assessment, deny.")
 
-        state = run("Restructuring query")
+        state = run("Restructuring query", _tid())
 
         assert state.final_response == "Based on risk assessment, deny."
 
@@ -210,9 +230,8 @@ class TestRiskAgentPath:
         _patch_risk_agent(mocker, response="Conditional approval.")
         mock_synthesis = _patch_synthesis(mocker)
 
-        run("High-value credit query")
+        run("High-value credit query", _tid())
 
-        # Synthesis must receive the risk assessment in the state it was called with.
         state_arg: OrchestratorState = mock_synthesis.call_args[0][0]
         assert state_arg.risk_assessment_response == "Conditional approval."
 
@@ -227,8 +246,7 @@ class TestRiskAgentPath:
         )
         _patch_synthesis(mocker, response="Partial answer.")
 
-        # Graph must complete even when the A2A call fails.
-        state = run("Any question")
+        state = run("Any question", _tid())
         assert state.final_response == "Partial answer."
         assert "unavailable" in state.risk_assessment_response.lower()
 
@@ -238,10 +256,62 @@ class TestRiskAgentPath:
         _patch_risk_agent(mocker, response="Risk OK.")
         mock_synthesis = _patch_synthesis(mocker, response="answer")
 
-        run("Complex query")
+        run("Complex query", _tid())
 
-        # Synthesis must have been called — which means graph completed.
         mock_synthesis.assert_called_once()
-        # The state passed to synthesis must have the evaluator's rationale.
         state_arg: OrchestratorState = mock_synthesis.call_args[0][0]
         assert state_arg.evaluator_rationale == "Mocked rationale for testing."
+
+
+# ---------------------------------------------------------------------------
+# Conversation memory — multi-turn checkpointing
+# ---------------------------------------------------------------------------
+
+
+class TestConversationMemory:
+    @pytest.fixture(autouse=True)
+    def _setup(self, _mem_checkpointer):
+        pass
+
+    def test_second_turn_preserves_conversation_summary(self, mocker):
+        """Verify that conversation_summary from a prior turn reaches the evaluator."""
+        thread = _tid()
+
+        _patch_rag(mocker)
+        _patch_evaluator(mocker, requires_escalation=False)
+        _patch_synthesis(
+            mocker,
+            response="First answer.",
+        )
+        # Inject a pre-existing conversation_summary via a second synthesis stub
+        # that returns a summary so the evaluator sees it on turn 2.
+        mocker.patch(
+            "src.graph.node_summarizer",
+            return_value={"conversation_summary": "Gestor foca em middle market."},
+        )
+
+        run("First question", thread)
+
+        # Turn 2: evaluator should receive the summary injected by the summarizer.
+        mock_evaluator = _patch_evaluator(mocker, requires_escalation=False)
+        _patch_synthesis(mocker, response="Second answer.")
+
+        run("Second question", thread)
+
+        state_arg: OrchestratorState = mock_evaluator.call_args[0][0]
+        assert state_arg.conversation_summary == "Gestor foca em middle market."
+
+    def test_question_updates_on_each_turn(self, mocker):
+        """Each new invocation with the same thread overwrites the question field."""
+        thread = _tid()
+
+        _patch_rag(mocker)
+        _patch_evaluator(mocker, requires_escalation=False)
+        _patch_synthesis(mocker)
+
+        run("First question", thread)
+        mock_synthesis = _patch_synthesis(mocker)
+        run("Second question", thread)
+
+        state_arg: OrchestratorState = mock_synthesis.call_args[0][0]
+        assert state_arg.question == "Second question"

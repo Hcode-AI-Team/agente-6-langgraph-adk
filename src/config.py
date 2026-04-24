@@ -92,6 +92,26 @@ class Settings(BaseSettings):
         description="Seconds to wait for the A2A call before raising a timeout error.",
     )
 
+    # --- Conversation memory ---
+    # Consolidation runs when recent_messages reaches this count (each Q&A = 2 messages).
+    summary_message_threshold: int = Field(
+        default=6,
+        ge=2,
+        description="Number of messages in recent_messages that triggers summarization.",
+    )
+    # How many of the most recent messages to keep after summarization.
+    summary_messages_to_keep: int = Field(
+        default=2,
+        ge=1,
+        description="Messages retained verbatim after consolidation into conversation_summary.",
+    )
+
+    # --- Checkpointer ---
+    checkpointer_db_path: str = Field(
+        default="checkpoints.db",
+        description="Path to the SQLite file used by LangGraph's checkpointer.",
+    )
+
     # --- Observability ---
     log_level: str = Field(default="INFO")
 

@@ -5,8 +5,9 @@ The evaluator uses the LLM with `with_structured_output` to produce a typed
 graph.py always reads a validated Python object — not a raw string that might
 fail to parse.
 
-The system prompt encodes the bank's triage policy.  When credit-risk criteria
-change, only this file needs updating.
+When a conversation_summary exists, it is injected into the system prompt as
+a behavioral hint: the evaluator learns, over multiple turns, which question
+types from THIS account manager consistently require escalation.
 """
 
 from __future__ import annotations
@@ -20,10 +21,7 @@ from ..state import OrchestratorState
 
 logger = get_logger(__name__)
 
-# System-level instructions that define the evaluator's decision criteria.
-# Written in Portuguese because the LLM will reason about Portuguese-language
-# policy documents and must produce Portuguese-language rationales.
-_SYSTEM_PROMPT = """Você é um avaliador de triagem do Banco BV.
+_BASE_SYSTEM_PROMPT = """Você é um avaliador de triagem do Banco BV.
 
 Sua tarefa é decidir se a dúvida do gestor de conta pode ser respondida
 apenas com a política interna recuperada (RAG) ou se exige a delegação
@@ -38,6 +36,12 @@ Exija análise de risco quando:
 Caso contrário, o RAG é suficiente.
 """
 
+_SESSION_HINT = """
+Perfil comportamental da sessão (padrões aprendidos de interações anteriores):
+{summary}
+Use este perfil para calibrar o limiar de escalação com base no histórico do gestor.
+"""
+
 _USER_PROMPT = """Pergunta do gestor:
 {question}
 
@@ -48,11 +52,7 @@ Decida e justifique."""
 
 
 def _format_context(state: OrchestratorState) -> str:
-    """Render the RAG documents into a numbered list for the prompt.
-
-    Each line shows the retrieval score and a truncated preview so the LLM
-    can gauge coverage without the full text inflating the prompt length.
-    """
+    """Render the RAG documents into a numbered list for the prompt."""
     if not state.rag_context:
         return "(no documents retrieved)"
     lines = [
@@ -63,18 +63,20 @@ def _format_context(state: OrchestratorState) -> str:
 
 
 def node_evaluator(state: OrchestratorState) -> dict:
-    """Classify whether the query requires escalation to the risk-agent node.
+    """Classify whether the query requires escalation to the risk-agent node."""
+    logger.info(
+        "node_evaluator | %d docs in context | summary=%s",
+        len(state.rag_context),
+        "yes" if state.conversation_summary else "none",
+    )
 
-    Returns a partial state dict with `requires_risk_assessment` and
-    `evaluator_rationale` populated.
-    """
-    logger.info("node_evaluator | %d docs in context", len(state.rag_context))
+    system_content = _BASE_SYSTEM_PROMPT
+    if state.conversation_summary:
+        system_content += _SESSION_HINT.format(summary=state.conversation_summary)
 
     prompt = ChatPromptTemplate.from_messages(
-        [("system", _SYSTEM_PROMPT), ("user", _USER_PROMPT)]
+        [("system", system_content), ("user", _USER_PROMPT)]
     )
-    # with_structured_output forces the LLM to return JSON that validates
-    # against RiskAssessment's schema, eliminating free-form parse errors.
     chain = prompt | get_llm().with_structured_output(RiskAssessment)
 
     result: RiskAssessment = chain.invoke(

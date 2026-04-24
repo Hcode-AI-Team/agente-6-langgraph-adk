@@ -17,6 +17,7 @@ class Node(StrEnum):
     EVALUATOR = "evaluator"
     RISK_AGENT = "risk_agent"
     SYNTHESIS = "synthesis"
+    SUMMARIZER = "summarizer"
 
 
 # Stable identifiers used when creating sessions with the ADK runner.

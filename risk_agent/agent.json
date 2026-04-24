@@ -1,0 +1,21 @@
+{
+  "name": "risk_specialist_bv",
+  "description": "Agente Especialista de Risco de Crédito do Banco BV. Analisa operações de crédito complexas usando políticas internas (RAG) e frameworks regulatórios (IFRS 9, Res. BCB 4.966). Chamado via A2A pelo orquestrador LangGraph quando o avaliador detecta necessidade de análise especializada.",
+  "url": "http://127.0.0.1:8080/a2a/risk_agent",
+  "version": "1.0.0",
+  "protocolVersion": "0.3.0",
+  "preferredTransport": "JSONRPC",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": ["text/plain"],
+  "defaultOutputModes": ["text/plain"],
+  "skills": [
+    {
+      "id": "assess_credit_risk",
+      "name": "Assess credit risk",
+      "description": "Analisa operações de crédito complexas. Recebe a pergunta do gestor e os trechos de política RAG, retorna parecer técnico estruturado com classificação de risco, fatores identificados, requisitos regulatórios e recomendação.",
+      "tags": ["risk", "credit", "banking", "brazil", "ifrs9", "bcb-4966"]
+    }
+  ]
+}
