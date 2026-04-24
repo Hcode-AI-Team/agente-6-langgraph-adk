@@ -1,0 +1,2470 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Aula: A2A — Agent-to-Agent Protocol | BV Agent Engineering
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #0f172a;
+        color: #e2e8f0;
+      }
+      .font-mono { font-family: "JetBrains Mono", monospace; }
+
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: #1e293b; }
+      ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+      .nav-item {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+      }
+      .nav-item:hover { background: rgba(59, 130, 246, 0.1); }
+      .nav-item.active {
+        border-left-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+      }
+
+      .submenu {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+      .submenu.open { max-height: 900px; }
+      .submenu-item {
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem 0.5rem 3rem;
+      }
+
+      .card {
+        background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+        border: 1px solid #334155;
+        transition: all 0.3s ease;
+      }
+      .card:hover {
+        border-color: #3b82f6;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px -10px rgba(59, 130, 246, 0.3);
+      }
+      .card.no-hover:hover { transform: none; box-shadow: none; border-color: #334155; }
+
+      .code-block {
+        background: #0c0f14;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        font-family: "JetBrains Mono", monospace;
+        position: relative;
+      }
+      .copy-btn { opacity: 0; transition: opacity 0.2s; }
+      .code-block:hover .copy-btn { opacity: 1; }
+      pre { white-space: pre; overflow-x: auto; }
+
+      /* syntax highlighting classes */
+      .tk-k { color: #c084fc; }      /* keyword */
+      .tk-s { color: #86efac; }      /* string */
+      .tk-n { color: #fbbf24; }      /* number */
+      .tk-c { color: #64748b; font-style: italic; } /* comment */
+      .tk-f { color: #60a5fa; }      /* function/method */
+      .tk-t { color: #f472b6; }      /* type */
+      .tk-p { color: #e2e8f0; }      /* plain */
+      .tk-prop { color: #38bdf8; }   /* json property */
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .fade-in { animation: fadeIn 0.4s ease-out; }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .arrow-flow::after {
+        content: "▶";
+        position: absolute;
+        right: -14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #3b82f6;
+        font-size: 14px;
+      }
+
+      .lifecycle-node {
+        position: relative;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border: 1px solid #334155;
+        font-weight: 600;
+        font-size: 12px;
+        color: #e2e8f0;
+      }
+      .lifecycle-node.state-submitted { border-color: #60a5fa; color: #60a5fa; }
+      .lifecycle-node.state-working { border-color: #facc15; color: #facc15; }
+      .lifecycle-node.state-input { border-color: #fb923c; color: #fb923c; }
+      .lifecycle-node.state-completed { border-color: #34d399; color: #34d399; }
+      .lifecycle-node.state-failed { border-color: #f87171; color: #f87171; }
+
+      .kbd {
+        font-family: "JetBrains Mono", monospace;
+        background: #0c0f14;
+        border: 1px solid #334155;
+        border-bottom-width: 2px;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+
+      table.spec-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      table.spec-table th,
+      table.spec-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #334155;
+        text-align: left;
+        vertical-align: top;
+      }
+      table.spec-table th {
+        background: #0c0f14;
+        color: #60a5fa;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+      }
+      table.spec-table tr:hover td { background: rgba(59, 130, 246, 0.05); }
+
+      .anchor-link {
+        color: #3b82f6;
+        text-decoration: underline;
+        text-decoration-color: rgba(59, 130, 246, 0.4);
+        text-underline-offset: 3px;
+      }
+      .anchor-link:hover { color: #60a5fa; }
+
+      details > summary {
+        cursor: pointer;
+        user-select: none;
+        list-style: none;
+      }
+      details > summary::-webkit-details-marker { display: none; }
+      details > summary::before {
+        content: "▶";
+        display: inline-block;
+        margin-right: 8px;
+        transition: transform 0.2s;
+        color: #3b82f6;
+      }
+      details[open] > summary::before { transform: rotate(90deg); }
+
+      .mermaid { text-align: center; }
+    </style>
+  </head>
+  <body class="flex flex-col h-screen overflow-hidden">
+    <!-- Header Navbar -->
+    <header
+      class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center justify-between z-30"
+    >
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <i class="fas fa-network-wired text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-white">Agent Engineering</h1>
+            <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">
+              Aula — A2A Protocol Deep Dive
+            </p>
+          </div>
+        </div>
+      </div>
+      <nav class="flex gap-3 items-center">
+        <span class="pill bg-green-600/20 text-green-400"><i class="fas fa-circle text-[8px]"></i> v0.3.0</span>
+        <span class="pill bg-purple-600/20 text-purple-400"><i class="fab fa-linux"></i> Linux Foundation</span>
+        <a
+          href="https://a2a-protocol.org/latest/specification/"
+          target="_blank"
+          class="px-4 py-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg text-sm font-semibold transition-all"
+        >
+          <i class="fas fa-book mr-2"></i>Spec Oficial
+        </a>
+      </nav>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+      <!-- Sidebar -->
+      <aside class="w-72 bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0 overflow-y-auto">
+        <div class="p-4 mx-4 mt-4 bg-blue-600/10 border border-blue-600/30 rounded-xl">
+          <div class="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1">Aula especial</div>
+          <div class="text-sm font-bold text-white leading-tight">A2A — Agent-to-Agent Protocol</div>
+          <div class="text-xs text-slate-400 mt-2">
+            <i class="fas fa-clock mr-1"></i> ~4h de estudo &middot; profundidade técnica
+          </div>
+        </div>
+
+        <nav class="flex-1 py-4">
+          <div class="px-4 mb-2">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Navegação</span>
+          </div>
+          <ul class="space-y-1 px-2" id="nav-root"></ul>
+        </nav>
+
+        <div class="p-4 text-[10px] text-slate-600 border-t border-slate-800">
+          Banco BV &middot; FIAP Agent Engineering &middot; Aula construída a partir da implementação real deste repositório.
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <main id="main-content" class="flex-1 overflow-y-auto bg-slate-950"></main>
+    </div>
+
+    <script>
+      // ==================== NAV DEFINITION ====================
+      const NAV = [
+        { route: "dashboard", icon: "fa-home", label: "Dashboard" },
+        {
+          key: "fundamentos",
+          icon: "fa-lightbulb",
+          label: "Fundamentos",
+          children: [
+            { route: "fundamentos/o-que-e", label: "O que é A2A?" },
+            { route: "fundamentos/motivacao", label: "Motivação e problema" },
+            { route: "fundamentos/posicao", label: "Posição no ecossistema" },
+            { route: "fundamentos/a2a-vs-mcp", label: "A2A vs MCP" },
+            { route: "fundamentos/historia", label: "História e governança" },
+          ],
+        },
+        {
+          key: "arquitetura",
+          icon: "fa-cubes",
+          label: "Arquitetura",
+          children: [
+            { route: "arquitetura/atores", label: "Atores e papéis" },
+            { route: "arquitetura/agent-card", label: "Agent Card" },
+            { route: "arquitetura/executor", label: "Agent Executor" },
+            { route: "arquitetura/task-manager", label: "Task Manager" },
+            { route: "arquitetura/push", label: "Push Notifications" },
+          ],
+        },
+        {
+          key: "protocolo",
+          icon: "fa-plug",
+          label: "Protocolo",
+          children: [
+            { route: "protocolo/jsonrpc", label: "JSON-RPC 2.0" },
+            { route: "protocolo/metodos", label: "Métodos A2A" },
+            { route: "protocolo/streaming", label: "Streaming (SSE)" },
+            { route: "protocolo/transports", label: "Transports" },
+            { route: "protocolo/well-known", label: "Discovery & Well-Known" },
+          ],
+        },
+        {
+          key: "mensagens",
+          icon: "fa-envelope-open-text",
+          label: "Mensagens & Tasks",
+          children: [
+            { route: "mensagens/message", label: "Message e Parts" },
+            { route: "mensagens/task-lifecycle", label: "Task Lifecycle" },
+            { route: "mensagens/artifacts", label: "Artifacts" },
+            { route: "mensagens/errors", label: "Erros padronizados" },
+          ],
+        },
+        {
+          key: "seguranca",
+          icon: "fa-shield-halved",
+          label: "Segurança",
+          children: [
+            { route: "seguranca/auth", label: "Autenticação" },
+            { route: "seguranca/authz", label: "Autorização" },
+            { route: "seguranca/tls", label: "TLS e boas práticas" },
+          ],
+        },
+        {
+          key: "implementacao",
+          icon: "fa-code",
+          label: "Implementação (ADK)",
+          children: [
+            { route: "implementacao/adk", label: "Google ADK para A2A" },
+            { route: "implementacao/servidor", label: "Construindo o servidor" },
+            { route: "implementacao/cliente", label: "Construindo o cliente" },
+            { route: "implementacao/projeto-bv", label: "Estudo de caso: Banco BV" },
+            { route: "implementacao/trace-real", label: "Trace real ponta-a-ponta" },
+          ],
+        },
+        {
+          key: "ops",
+          icon: "fa-stethoscope",
+          label: "Ops & Troubleshooting",
+          children: [
+            { route: "ops/checklist", label: "Checklist de produção" },
+            { route: "ops/erros-comuns", label: "Erros comuns (vividos)" },
+            { route: "ops/debug", label: "Técnicas de debug" },
+          ],
+        },
+        {
+          key: "comparativos",
+          icon: "fa-scale-balanced",
+          label: "Comparativos",
+          children: [
+            { route: "comparativos/mcp", label: "A2A × MCP" },
+            { route: "comparativos/langgraph", label: "A2A × LangGraph subagents" },
+            { route: "comparativos/openai", label: "A2A × OpenAI Assistants" },
+          ],
+        },
+        { route: "referencias", icon: "fa-book-open", label: "Referências" },
+      ];
+
+      let currentRoute = "dashboard";
+      let openSubmenus = new Set();
+
+      function buildNav() {
+        const root = document.getElementById("nav-root");
+        root.innerHTML = NAV.map((item) => {
+          if (item.children) {
+            const sub = item.children
+              .map(
+                (c) => `
+                <li>
+                  <button onclick="router('${c.route}')" id="nav-${c.route.replace(/\//g, "-")}"
+                    class="submenu-item nav-item w-full text-left text-slate-400 hover:text-white rounded-r-lg">
+                    ${c.label}
+                  </button>
+                </li>`,
+              )
+              .join("");
+            return `
+              <li>
+                <button onclick="toggleSubmenu('${item.key}')"
+                  class="nav-item w-full text-left px-4 py-3 rounded-lg text-sm font-medium flex items-center justify-between">
+                  <span><i class="fas ${item.icon} w-6 text-slate-400"></i> ${item.label}</span>
+                  <i class="fas fa-chevron-down text-slate-500 transition-transform" id="icon-${item.key}"></i>
+                </button>
+                <ul class="submenu" id="submenu-${item.key}">${sub}</ul>
+              </li>`;
+          }
+          return `
+            <li>
+              <button onclick="router('${item.route}')" id="nav-${item.route}"
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-sm font-medium">
+                <i class="fas ${item.icon} w-6 text-slate-400"></i> ${item.label}
+              </button>
+            </li>`;
+        }).join("");
+      }
+
+      function toggleSubmenu(name) {
+        const submenu = document.getElementById(`submenu-${name}`);
+        const icon = document.getElementById(`icon-${name}`);
+        if (submenu.classList.contains("open")) {
+          submenu.classList.remove("open");
+          icon.style.transform = "rotate(0deg)";
+          openSubmenus.delete(name);
+        } else {
+          submenu.classList.add("open");
+          icon.style.transform = "rotate(180deg)";
+          openSubmenus.add(name);
+        }
+      }
+
+      function ensureParentOpen(route) {
+        const parent = NAV.find((n) => n.children && n.children.some((c) => c.route === route));
+        if (parent && !openSubmenus.has(parent.key)) toggleSubmenu(parent.key);
+      }
+
+      function router(route) {
+        currentRoute = route;
+        document.querySelectorAll(".nav-item").forEach((el) => el.classList.remove("active"));
+        const btn = document.getElementById(`nav-${route.replace(/\//g, "-")}`);
+        if (btn) btn.classList.add("active");
+        ensureParentOpen(route);
+
+        const main = document.getElementById("main-content");
+        main.innerHTML = "";
+        main.scrollTop = 0;
+
+        const renderer = RENDERERS[route] || RENDERERS["dashboard"];
+        renderer(main);
+      }
+
+      function copyCode(btn) {
+        const pre = btn.parentElement.querySelector("pre");
+        const text = pre.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '<i class="fas fa-check mr-1"></i>Copiado';
+          setTimeout(() => (btn.innerHTML = orig), 1500);
+        });
+      }
+
+      function codeBlock(lang, html) {
+        return `
+          <div class="code-block m-0">
+            <button onclick="copyCode(this)" class="copy-btn absolute top-2 right-2 px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs rounded z-10">
+              <i class="fas fa-copy mr-1"></i>Copiar
+            </button>
+            <div class="px-4 py-2 border-b border-slate-800 text-[10px] uppercase tracking-wider text-slate-500 font-semibold flex items-center justify-between">
+              <span><i class="fas fa-code mr-2 text-blue-400"></i>${lang}</span>
+            </div>
+            <pre class="p-4 text-sm leading-relaxed">${html}</pre>
+          </div>`;
+      }
+
+      function section(title, icon, body) {
+        return `
+          <section class="mb-10">
+            <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+              <span class="w-8 h-8 bg-blue-600/20 text-blue-400 rounded-lg flex items-center justify-center">
+                <i class="fas ${icon}"></i>
+              </span>
+              ${title}
+            </h2>
+            ${body}
+          </section>`;
+      }
+
+      function pageHeader(kicker, title, lead) {
+        return `
+          <div class="mb-10 fade-in">
+            <div class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+              <i class="fas fa-bookmark mr-2"></i>${kicker}
+            </div>
+            <h1 class="text-4xl font-black text-white mb-3">${title}</h1>
+            <p class="text-slate-400 text-lg max-w-4xl leading-relaxed">${lead}</p>
+          </div>`;
+      }
+
+      function callout(variant, icon, title, html) {
+        const map = {
+          info: ["bg-blue-600/10", "border-blue-600/40", "text-blue-400"],
+          warn: ["bg-amber-600/10", "border-amber-600/40", "text-amber-400"],
+          danger: ["bg-red-600/10", "border-red-600/40", "text-red-400"],
+          ok: ["bg-green-600/10", "border-green-600/40", "text-green-400"],
+          tip: ["bg-purple-600/10", "border-purple-600/40", "text-purple-400"],
+        };
+        const [bg, bd, tx] = map[variant] || map.info;
+        return `
+          <div class="${bg} border ${bd} rounded-xl p-4 mb-4 flex gap-3">
+            <i class="fas ${icon} ${tx} mt-1"></i>
+            <div>
+              <div class="${tx} font-bold text-sm mb-1">${title}</div>
+              <div class="text-slate-300 text-sm leading-relaxed">${html}</div>
+            </div>
+          </div>`;
+      }
+
+      function kv(k, v) {
+        return `<span class="font-mono text-[11px] bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-slate-300">${k}=<span class="text-amber-300">${v}</span></span>`;
+      }
+
+      // ==================== RENDERERS ====================
+      const RENDERERS = {};
+
+      // --------- DASHBOARD ---------
+      RENDERERS["dashboard"] = function (c) {
+        c.innerHTML = `
+          <div class="p-8 fade-in">
+            ${pageHeader(
+              "Aula especial — Protocolo A2A",
+              "Agent-to-Agent: como agentes de IA conversam entre si",
+              "Esta aula explica do zero ao nível operacional o <strong>Agent-to-Agent Protocol (A2A)</strong> — o padrão aberto, mantido pela Linux Foundation, que permite que agentes autônomos construídos em frameworks diferentes (Google ADK, LangGraph, CrewAI, AutoGen, custom) descubram, negociem capacidades e executem tarefas uns dos outros sem acoplamento de código. Todo o material é ancorado na <strong>implementação real do orquestrador LangGraph + Risk Specialist deste repositório</strong>."
+            )}
+
+            <div class="grid grid-cols-4 gap-4 mb-8">
+              ${[
+                { label: "Versão da Spec", value: "v0.3.0", icon: "fa-code-branch" },
+                { label: "Transporte padrão", value: "JSON-RPC 2.0", icon: "fa-plug" },
+                { label: "Governança", value: "Linux Foundation", icon: "fab fa-linux" },
+                { label: "Anunciado por", value: "Google, abril/2025", icon: "fab fa-google" },
+              ]
+                .map(
+                  (s) => `
+                  <div class="card rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">${s.label}</div>
+                      <i class="fas ${s.icon} text-slate-600"></i>
+                    </div>
+                    <div class="text-xl font-bold text-white">${s.value}</div>
+                  </div>`
+                )
+                .join("")}
+            </div>
+
+            ${section(
+              "Por que esta aula importa",
+              "fa-compass",
+              `
+              <div class="grid grid-cols-3 gap-6">
+                <div class="card rounded-xl p-6">
+                  <div class="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-puzzle-piece text-blue-400"></i>
+                  </div>
+                  <h3 class="font-bold text-white mb-2">Interoperabilidade real</h3>
+                  <p class="text-sm text-slate-400">Seu orquestrador em LangGraph conversa com um especialista em Google ADK sem gambiarra. Cada agente fica no framework onde é mais forte.</p>
+                </div>
+                <div class="card rounded-xl p-6">
+                  <div class="w-10 h-10 bg-purple-600/20 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-shield-halved text-purple-400"></i>
+                  </div>
+                  <h3 class="font-bold text-white mb-2">Padrão aberto e auditável</h3>
+                  <p class="text-sm text-slate-400">JSON-RPC 2.0 + HTTP(S) + SSE. Versionado (v0.3.0), com schema publicado e governança comunitária (LF AI & Data).</p>
+                </div>
+                <div class="card rounded-xl p-6">
+                  <div class="w-10 h-10 bg-green-600/20 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-building-columns text-green-400"></i>
+                  </div>
+                  <h3 class="font-bold text-white mb-2">Aplicabilidade em banking</h3>
+                  <p class="text-sm text-slate-400">Regulação bancária exige separação de responsabilidades e trilhas de auditoria. A2A materializa esse particionamento entre agentes.</p>
+                </div>
+              </div>`
+            )}
+
+            ${section(
+              "Cenário do laboratório",
+              "fa-diagram-project",
+              `
+              <div class="card no-hover rounded-xl p-8">
+                <p class="text-slate-300 mb-6">Vamos usar como fio condutor o sistema deste repositório. O <strong class="text-blue-400">Orquestrador LangGraph</strong> avalia, via RAG, se precisa consultar um especialista e delega a análise regulatória ao <strong class="text-purple-400">Risk Specialist</strong> construído em Google ADK — tudo por A2A.</p>
+                <div class="flex items-center justify-center gap-3 flex-wrap">
+                  <div class="card rounded-lg p-4 w-48 text-center relative arrow-flow">
+                    <i class="fas fa-user text-slate-400 text-2xl mb-2"></i>
+                    <div class="font-bold text-white text-sm">Gestor de Conta</div>
+                    <div class="text-[10px] text-slate-500">usuário humano</div>
+                  </div>
+                  <div class="card rounded-lg p-4 w-48 text-center relative arrow-flow" style="border-color:#3b82f6">
+                    <i class="fas fa-sitemap text-blue-400 text-2xl mb-2"></i>
+                    <div class="font-bold text-white text-sm">Orquestrador</div>
+                    <div class="text-[10px] text-blue-400">LangGraph</div>
+                  </div>
+                  <div class="card rounded-lg p-4 w-48 text-center relative arrow-flow" style="border-color:#a855f7">
+                    <span class="pill bg-purple-600/20 text-purple-400 mb-2"><i class="fas fa-network-wired"></i> A2A</span>
+                    <div class="font-bold text-white text-sm">Protocolo A2A</div>
+                    <div class="text-[10px] text-purple-400">JSON-RPC / SSE</div>
+                  </div>
+                  <div class="card rounded-lg p-4 w-48 text-center" style="border-color:#ec4899">
+                    <i class="fas fa-user-tie text-pink-400 text-2xl mb-2"></i>
+                    <div class="font-bold text-white text-sm">Risk Specialist</div>
+                    <div class="text-[10px] text-pink-400">Google ADK</div>
+                  </div>
+                </div>
+              </div>`
+            )}
+
+            ${section(
+              "Roadmap da aula",
+              "fa-route",
+              `<div class="grid grid-cols-2 gap-4">
+                ${[
+                  ["Fundamentos", "Motivação, comparação com MCP, governança.", "fa-lightbulb", "blue"],
+                  ["Arquitetura", "Atores, Agent Card, Executor, Task Manager.", "fa-cubes", "purple"],
+                  ["Protocolo", "JSON-RPC, métodos, SSE, well-known.", "fa-plug", "green"],
+                  ["Mensagens", "Messages, Parts, Lifecycle, Artifacts.", "fa-envelope-open-text", "amber"],
+                  ["Segurança", "AuthN, AuthZ, TLS.", "fa-shield-halved", "red"],
+                  ["Implementação", "ADK passo-a-passo + projeto BV.", "fa-code", "blue"],
+                  ["Ops", "Troubleshooting real do nosso projeto.", "fa-stethoscope", "purple"],
+                  ["Comparativos", "A2A × MCP × LangGraph × OpenAI.", "fa-scale-balanced", "green"],
+                ]
+                  .map(
+                    ([t, d, i, col]) => `
+                    <div class="card rounded-xl p-5">
+                      <div class="flex items-center gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-${col}-600/20 text-${col}-400">
+                          <i class="fas ${i}"></i>
+                        </div>
+                        <h4 class="font-bold text-white">${t}</h4>
+                      </div>
+                      <p class="text-sm text-slate-400">${d}</p>
+                    </div>`
+                  )
+                  .join("")}
+              </div>`
+            )}
+          </div>`;
+      };
+
+      // --------- FUNDAMENTOS ---------
+      RENDERERS["fundamentos/o-que-e"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Fundamentos — 1/5", "O que é A2A?",
+            "A2A (Agent-to-Agent) é um <strong>protocolo aberto de aplicação</strong> construído sobre HTTP(S) que define como um agente-cliente descobre, negocia e executa tarefas em um agente-servidor — mesmo que sejam implementados em frameworks, linguagens ou fornecedores totalmente diferentes.")}
+
+          ${section("Definição em uma frase", "fa-bullseye", `
+            <div class="card no-hover rounded-xl p-6">
+              <p class="text-lg text-slate-200 leading-relaxed">
+                <strong class="text-blue-400">A2A</strong> é para <em>agentes conversarem com agentes</em> o que
+                <strong class="text-purple-400">MCP</strong> é para <em>um agente conversar com ferramentas</em> e o que
+                <strong class="text-green-400">HTTP/REST</strong> é para <em>aplicações conversarem entre si</em>.
+              </p>
+            </div>`)}
+
+          ${section("As quatro garantias do protocolo", "fa-list-check", `
+            <div class="grid grid-cols-2 gap-4">
+              ${[
+                ["Descoberta", "fa-compass", "O cliente lê um Agent Card em /.well-known/agent-card.json e aprende capacidades, endpoints, autenticação e modos de entrada/saída antes de falar com o agente."],
+                ["Execução de tarefas", "fa-play", "Uma mensagem dispara uma Task com estado próprio (submitted → working → completed). O cliente pode acompanhar em tempo real ou fazer polling."],
+                ["Streaming em tempo real", "fa-wave-square", "Respostas parciais, tool calls e artifacts fluem por Server-Sent Events (SSE) sobre HTTP — sem WebSocket, sem custom protocol."],
+                ["Multi-modalidade", "fa-file-image", "Mensagens transportam texts, files e data parts. A2A não assume que tudo é texto; suporta áudio, imagem, JSON estruturado e binários por referência/URI."],
+              ].map(([t, i, d]) => `
+                <div class="card rounded-xl p-5">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center"><i class="fas ${i}"></i></div>
+                    <h4 class="font-bold text-white">${t}</h4>
+                  </div>
+                  <p class="text-sm text-slate-400">${d}</p>
+                </div>`).join("")}
+            </div>`)}
+
+          ${section("Um exemplo minimalista",  "fa-code", `
+            <p class="text-slate-400 mb-3">Um cliente envia uma única mensagem. O servidor responde com o texto do parecer. Este é o A2A no seu menor denominador:</p>
+            ${codeBlock("HTTP request (cliente → servidor)",
+`<span class="tk-k">POST</span> <span class="tk-prop">/a2a/risk_agent</span> HTTP/1.1
+<span class="tk-prop">Host</span>: risk.example.com
+<span class="tk-prop">Content-Type</span>: application/json
+
+{
+  <span class="tk-prop">"jsonrpc"</span>: <span class="tk-s">"2.0"</span>,
+  <span class="tk-prop">"id"</span>: <span class="tk-s">"req-1"</span>,
+  <span class="tk-prop">"method"</span>: <span class="tk-s">"message/send"</span>,
+  <span class="tk-prop">"params"</span>: {
+    <span class="tk-prop">"message"</span>: {
+      <span class="tk-prop">"role"</span>: <span class="tk-s">"user"</span>,
+      <span class="tk-prop">"parts"</span>: [{ <span class="tk-prop">"kind"</span>: <span class="tk-s">"text"</span>, <span class="tk-prop">"text"</span>: <span class="tk-s">"Avaliar crédito de R$ 50mi rating B"</span> }]
+    }
+  }
+}`)}
+            <div class="mt-4"></div>
+            ${codeBlock("HTTP response (servidor → cliente)",
+`HTTP/1.1 <span class="tk-n">200</span> OK
+<span class="tk-prop">Content-Type</span>: application/json
+
+{
+  <span class="tk-prop">"jsonrpc"</span>: <span class="tk-s">"2.0"</span>,
+  <span class="tk-prop">"id"</span>: <span class="tk-s">"req-1"</span>,
+  <span class="tk-prop">"result"</span>: {
+    <span class="tk-prop">"kind"</span>: <span class="tk-s">"message"</span>,
+    <span class="tk-prop">"role"</span>: <span class="tk-s">"agent"</span>,
+    <span class="tk-prop">"parts"</span>: [{ <span class="tk-prop">"kind"</span>: <span class="tk-s">"text"</span>, <span class="tk-prop">"text"</span>: <span class="tk-s">"Classificação de Risco: Alto..."</span> }]
+  }
+}`)}
+
+            ${callout("info","fa-lightbulb","Chave de entendimento",
+              "Tudo em A2A passa por esse formato JSON-RPC. As variações giram em torno do <em>method</em> (message/send, message/stream, tasks/get, ...) e do tipo de mensagem (text, file, data).")}`)}
+
+          ${section("Quando usar A2A (e quando NÃO usar)", "fa-traffic-light", `
+            <div class="grid grid-cols-2 gap-4">
+              <div class="card rounded-xl p-5" style="border-color:#22c55e">
+                <h4 class="font-bold text-green-400 mb-2"><i class="fas fa-check-circle mr-2"></i>Use A2A quando...</h4>
+                <ul class="text-sm text-slate-300 space-y-2">
+                  <li>• Você tem <strong>dois ou mais agentes</strong> independentes que precisam colaborar.</li>
+                  <li>• Os agentes estão em <strong>linguagens/frameworks diferentes</strong>.</li>
+                  <li>• Você quer <strong>isolar deploys</strong> (um agente sensível em outro cluster).</li>
+                  <li>• Há requisito de <strong>auditoria / trilha regulatória</strong> de quem delegou o quê.</li>
+                  <li>• Você precisa de <strong>streaming</strong> de raciocínio e tool calls.</li>
+                </ul>
+              </div>
+              <div class="card rounded-xl p-5" style="border-color:#ef4444">
+                <h4 class="font-bold text-red-400 mb-2"><i class="fas fa-times-circle mr-2"></i>NÃO use A2A quando...</h4>
+                <ul class="text-sm text-slate-300 space-y-2">
+                  <li>• Você só precisa expor <strong>ferramentas determinísticas</strong> (use <strong>MCP</strong>).</li>
+                  <li>• Tudo roda no <strong>mesmo processo</strong> (use chamada de função direta).</li>
+                  <li>• Latência &lt; 50ms é obrigatória (adicione gRPC ou RPC local).</li>
+                  <li>• Contrato é <strong>request/response tipado e fechado</strong> (use gRPC/OpenAPI — agentes introduzem não-determinismo).</li>
+                </ul>
+              </div>
+            </div>`)}
+        </div>`;
+      };
+
+      RENDERERS["fundamentos/motivacao"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Fundamentos — 2/5", "Motivação: o problema que A2A resolve",
+            "Antes de A2A, orquestrar múltiplos agentes significava escrever <em>glue code</em> específico para cada framework, reinventar formatos de mensagem, renegociar contratos e duplicar lógica de streaming, autenticação e observabilidade. A2A padroniza isso.")}
+
+          ${section("O antes: o inferno da integração ponto-a-ponto", "fa-fire", `
+            <div class="card no-hover rounded-xl p-6">
+              <p class="text-slate-300 mb-4">Sem um protocolo comum, cada par de agentes exigia:</p>
+              <div class="grid grid-cols-2 gap-3">
+                ${[
+                  "Formato de payload proprietário",
+                  "Semântica custom de streaming",
+                  "Autenticação e autorização ad hoc",
+                  "Mecanismos de cancelamento diferentes",
+                  "Forma própria de anunciar capacidades",
+                  "Telemetria e tracing incompatíveis",
+                ].map((t) => `
+                  <div class="flex items-center gap-2 p-2 rounded bg-red-600/5 border border-red-600/20">
+                    <i class="fas fa-xmark text-red-400"></i>
+                    <span class="text-sm text-slate-300">${t}</span>
+                  </div>`).join("")}
+              </div>
+            </div>`)}
+
+          ${section("O depois: A2A como substrato neutro", "fa-bridge", `
+            <div class="card no-hover rounded-xl p-6">
+              <div class="grid grid-cols-3 gap-3 mb-4">
+                ${[
+                  ["Descoberta", "fa-compass", "Agent Card padronizado"],
+                  ["Mensageria", "fa-envelope", "Messages + Parts tipadas"],
+                  ["Estado", "fa-database", "Task lifecycle explícito"],
+                  ["Streaming", "fa-wave-square", "SSE canônico"],
+                  ["Segurança", "fa-lock", "OAuth2 / mTLS / schemes"],
+                  ["Observabilidade", "fa-eye", "IDs propagados (task, context)"],
+                ].map(([t,i,d]) => `
+                  <div class="rounded-lg p-3 bg-green-600/5 border border-green-600/20">
+                    <div class="flex items-center gap-2 mb-1"><i class="fas ${i} text-green-400"></i><strong class="text-white text-sm">${t}</strong></div>
+                    <div class="text-xs text-slate-400">${d}</div>
+                  </div>`).join("")}
+              </div>
+              <p class="text-sm text-slate-400">Todas as preocupações ortogonais foram extraídas para o protocolo. Cada framework só precisa implementar um <em>adapter</em>.</p>
+            </div>`)}
+
+          ${section("Cinco problemas concretos eliminados", "fa-hand-holding-medical", `
+            <div class="space-y-3">
+              ${[
+                ["Framework lock-in", "Você não precisa padronizar todos os agentes em ADK ou em LangGraph. Cada time escolhe a stack que domina."],
+                ["Retrabalho de formato", "Mensagens, roles, parts, citations — tudo definido uma vez só."],
+                ["Streaming custom", "SSE cobre streaming, tool calls e artifacts. Fim de WebSocket caseiro."],
+                ["Autenticação ad hoc", "Agent Card declara securitySchemes; cliente pluga bearer/OAuth/mTLS uma única vez."],
+                ["Telemetria opaca", "contextId e taskId viajam em todos os payloads — correlação automática em Datadog / OTel."],
+              ].map((v,i) => `
+                <div class="card rounded-xl p-4 flex items-start gap-4">
+                  <div class="w-10 h-10 bg-blue-600/20 text-blue-400 rounded-lg flex items-center justify-center font-bold flex-shrink-0">${i+1}</div>
+                  <div>
+                    <h4 class="font-bold text-white mb-1">${v[0]}</h4>
+                    <p class="text-sm text-slate-400">${v[1]}</p>
+                  </div>
+                </div>`).join("")}
+            </div>`)}
+
+          ${callout("tip","fa-graduation-cap","No nosso projeto",
+            "Se quiséssemos migrar o Risk Specialist de ADK para CrewAI amanhã, o orquestrador LangGraph não precisaria mudar uma linha — desde que o novo servidor também fale A2A e exponha o mesmo Agent Card.")}
+        </div>`;
+      };
+
+      RENDERERS["fundamentos/posicao"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Fundamentos — 3/5", "Posição no ecossistema de agentes",
+            "Para evitar confusão, precisamos enxergar A2A dentro de uma pilha maior. A2A resolve <em>agente fala com agente</em>, MCP resolve <em>agente usa ferramenta</em>, LangGraph/ADK resolvem <em>como o agente pensa internamente</em>.")}
+
+          ${section("A pilha em 3 camadas", "fa-layer-group", `
+            <div class="space-y-3">
+              <div class="card no-hover rounded-xl p-5" style="border-color:#3b82f6">
+                <div class="flex items-center gap-3 mb-2">
+                  <span class="pill bg-blue-600/20 text-blue-400">camada 3 — interação externa</span>
+                </div>
+                <h4 class="text-xl font-bold text-white mb-1"><i class="fas fa-network-wired text-blue-400 mr-2"></i>A2A Protocol</h4>
+                <p class="text-sm text-slate-400">Comunicação entre agentes independentes através da rede. HTTP + JSON-RPC + SSE. Descoberta via Agent Card.</p>
+              </div>
+              <div class="card no-hover rounded-xl p-5" style="border-color:#a855f7">
+                <div class="flex items-center gap-3 mb-2">
+                  <span class="pill bg-purple-600/20 text-purple-400">camada 2 — capacidades externas</span>
+                </div>
+                <h4 class="text-xl font-bold text-white mb-1"><i class="fas fa-screwdriver-wrench text-purple-400 mr-2"></i>MCP (Model Context Protocol)</h4>
+                <p class="text-sm text-slate-400">Como o agente invoca ferramentas e acessa fontes de dados estruturadas (filesystem, API, DB, vector store).</p>
+              </div>
+              <div class="card no-hover rounded-xl p-5" style="border-color:#22c55e">
+                <div class="flex items-center gap-3 mb-2">
+                  <span class="pill bg-green-600/20 text-green-400">camada 1 — raciocínio interno</span>
+                </div>
+                <h4 class="text-xl font-bold text-white mb-1"><i class="fas fa-brain text-green-400 mr-2"></i>Framework do agente</h4>
+                <p class="text-sm text-slate-400">Google ADK, LangGraph, CrewAI, AutoGen. Define como o agente pensa: state, grafo, loops ReAct, memória, checkpoints.</p>
+              </div>
+            </div>`)}
+
+          ${section("Analogia: um banco tradicional", "fa-building-columns", `
+            <div class="card no-hover rounded-xl p-6">
+              <table class="spec-table">
+                <thead><tr><th>No banco BV tradicional</th><th>No mundo dos agentes</th></tr></thead>
+                <tbody>
+                  <tr><td>Gerente fala com Analista de Risco por e-mail padrão ISO</td><td><strong class="text-blue-400">A2A</strong> — contrato entre profissionais</td></tr>
+                  <tr><td>O analista consulta Serasa, SPC, CVM</td><td><strong class="text-purple-400">MCP</strong> — ferramentas externas</td></tr>
+                  <tr><td>Como o analista organiza o cérebro dele (planilhas, memória)</td><td><strong class="text-green-400">ADK / LangGraph</strong> — o framework interno</td></tr>
+                </tbody>
+              </table>
+            </div>`)}
+
+          ${callout("info","fa-lightbulb","Insight",
+            "As três camadas são <em>ortogonais</em>. Um agente ADK pode expor capacidades via MCP e delegar a outro agente via A2A ao mesmo tempo — foi exatamente o que construímos neste repositório.")}
+        </div>`;
+      };
+
+      RENDERERS["fundamentos/a2a-vs-mcp"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Fundamentos — 4/5", "A2A vs MCP — complementares, não concorrentes",
+            "Essa é a confusão mais comum na comunidade. Ambos são protocolos JSON sobre HTTP, ambos foram anunciados por grandes labs em 2024–2025. Mas cobrem problemas diferentes e coexistem no mesmo agente.")}
+
+          ${section("Comparação lado a lado", "fa-balance-scale", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead>
+                  <tr>
+                    <th>Dimensão</th>
+                    <th style="color:#60a5fa">A2A</th>
+                    <th style="color:#c084fc">MCP</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${[
+                    ["Anunciado por","Google (abr/2025)","Anthropic (nov/2024)"],
+                    ["Papel principal","Agente ↔ Agente","Agente ↔ Ferramenta/Recurso"],
+                    ["Servidor expõe","Capacidades cognitivas (skills)","Tools, Resources, Prompts"],
+                    ["Peer é autônomo?","Sim — servidor raciocina, usa LLM","Não — servidor executa chamadas determinísticas"],
+                    ["Streaming","SSE built-in (message/stream)","Não canônico (alguns hosts implementam)"],
+                    ["Estado","Task lifecycle explícito","Stateless entre chamadas"],
+                    ["Descoberta","/.well-known/agent-card.json","initialize + list_tools"],
+                    ["Transport","HTTP (JSON-RPC / REST / gRPC)","HTTP / stdio / WebSocket"],
+                    ["Governança","Linux Foundation","Anthropic + comunidade"],
+                    ["Exemplo do repo","RemoteA2aAgent → risk_specialist_bv","(não usado — poderíamos expor Vector Search como MCP)"],
+                  ].map(r => `<tr><td class="font-semibold text-white">${r[0]}</td><td class="text-slate-300">${r[1]}</td><td class="text-slate-300">${r[2]}</td></tr>`).join("")}
+                </tbody>
+              </table>
+            </div>`)}
+
+          ${section("Quem chama quem?", "fa-arrows-turn-to-dots", `
+            <div class="card no-hover rounded-xl p-6">
+              <p class="text-slate-300 mb-4 text-sm">Num sistema maduro, os dois protocolos convivem em direções ortogonais:</p>
+              ${codeBlock("Camadas de chamada",
+`<span class="tk-c"># Vertical (MCP): agente A consulta ferramentas</span>
+<span class="tk-f">Orquestrador</span> ──MCP──▶ <span class="tk-t">VectorSearchTool</span>
+<span class="tk-f">Orquestrador</span> ──MCP──▶ <span class="tk-t">PostgresTool</span>
+
+<span class="tk-c"># Horizontal (A2A): agente A delega para agente B</span>
+<span class="tk-f">Orquestrador</span> ──A2A──▶ <span class="tk-f">RiskSpecialist</span>
+                                    │
+                                    ├──MCP──▶ <span class="tk-t">RegulatoryAPI</span>
+                                    └──MCP──▶ <span class="tk-t">CreditBureauTool</span>`)}
+            </div>`)}
+
+          ${callout("warn","fa-triangle-exclamation","Erro comum",
+            "Tratar A2A como se fosse um substituto de MCP. Se você só quer expor uma função SQL, monte um servidor MCP. Se quer expor um agente que decide, reflete e chama outras ferramentas, monte um servidor A2A.")}
+        </div>`;
+      };
+
+      RENDERERS["fundamentos/historia"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Fundamentos — 5/5", "História e governança",
+            "A2A nasceu como iniciativa do Google em 2025 e foi doado ao Linux Foundation AI & Data pouco depois, seguindo o mesmo padrão de abertura que consagrou Kubernetes e gRPC.")}
+
+          ${section("Linha do tempo", "fa-timeline", `
+            <div class="space-y-3">
+              ${[
+                ["Abr 2025","Google anuncia A2A na Cloud Next, com 50+ parceiros (Salesforce, SAP, MongoDB, LangChain, Cohere)"],
+                ["Mai 2025","Primeira release pública da spec, SDKs em Python e TypeScript"],
+                ["Jun 2025","Doação para a Linux Foundation AI & Data — governança independente"],
+                ["Jul 2025","Spec v0.2.x: introdução formal de Task lifecycle e Artifacts"],
+                ["Out 2025","Spec v0.3.0 (atual): Agent Card v3, padronização de transports REST/gRPC ao lado de JSON-RPC"],
+                ["2026","Integração nativa em Google ADK, LangGraph RemoteA2aAgent, CrewAI, AutoGen"],
+              ].map(r => `
+                <div class="card rounded-xl p-4 flex gap-4">
+                  <div class="pill bg-blue-600/20 text-blue-400 flex-shrink-0 h-fit"><i class="fas fa-calendar"></i> ${r[0]}</div>
+                  <div class="text-slate-300 text-sm">${r[1]}</div>
+                </div>`).join("")}
+            </div>`)}
+
+          ${section("Governança atual", "fa-users-gear", `
+            <div class="grid grid-cols-3 gap-4">
+              ${[
+                ["Linux Foundation","Organização host, selo de neutralidade","fab fa-linux","text-white"],
+                ["LF AI & Data","Sub-foundation específica","fa-diagram-project","text-purple-400"],
+                ["Technical Charter","Define processo de PRs e releases","fa-scroll","text-amber-400"],
+              ].map(r => `
+                <div class="card rounded-xl p-5 text-center">
+                  <i class="fas ${r[2]} ${r[3]} text-3xl mb-3"></i>
+                  <h4 class="font-bold text-white mb-1">${r[0]}</h4>
+                  <p class="text-xs text-slate-400">${r[1]}</p>
+                </div>`).join("")}
+            </div>`)}
+
+          ${callout("ok","fa-check","Por que isso importa para o BV",
+            "Um protocolo com governança independente tem vida longa e baixo risco regulatório. Você não fica refém de roadmap proprietário — <em>e nem da descontinuação</em> de uma API comercial.")}
+        </div>`;
+      };
+
+      // --------- ARQUITETURA ---------
+      RENDERERS["arquitetura/atores"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Arquitetura — 1/5", "Atores e papéis",
+            "O protocolo define três papéis funcionais que aparecem em qualquer interação A2A, independente do transporte. Entender esses papéis é pré-requisito para ler qualquer SDK.")}
+
+          ${section("Os três atores", "fa-users", `
+            <div class="grid grid-cols-3 gap-4">
+              ${[
+                ["A2A Client","fa-user","blue","O orquestrador / consumidor. Lê o Agent Card, abre sessões, envia mensagens, consome streams.","Ex.: nosso <code class='font-mono'>src/clients/adk_client.py</code> com RemoteA2aAgent."],
+                ["A2A Server","fa-server","purple","Processo que <strong>hospeda</strong> o agente remoto. Recebe requisições HTTP, roteia para o Executor, gerencia tasks.","Ex.: nosso <code class='font-mono'>run_risk_agent.py</code> com FastAPI + ADK."],
+                ["Agent","fa-robot","pink","A entidade cognitiva de fato — LLM + prompt + tools + memória. O Server é apenas a carcaça HTTP.","Ex.: <code class='font-mono'>risk_agent/agent.py</code> com LlmAgent do ADK."],
+              ].map(r => `
+                <div class="card rounded-xl p-5">
+                  <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-${r[2]}-600/20 text-${r[2]}-400 mb-3">
+                    <i class="fas ${r[1]} text-lg"></i>
+                  </div>
+                  <h4 class="font-bold text-white mb-1">${r[0]}</h4>
+                  <p class="text-sm text-slate-400 mb-2">${r[3]}</p>
+                  <p class="text-xs text-slate-500">${r[4]}</p>
+                </div>`).join("")}
+            </div>`)}
+
+          ${section("Diálogo completo entre atores", "fa-comments", `
+            ${codeBlock("Sequência A2A (simplificada)",
+`<span class="tk-f">Client</span> ─────(1) GET <span class="tk-s">/.well-known/agent-card.json</span>────▶ <span class="tk-f">Server</span>
+<span class="tk-f">Client</span> ◀────(2) AgentCard{ url, skills, auth, ... }────── <span class="tk-f">Server</span>
+
+<span class="tk-f">Client</span> ─────(3) POST <span class="tk-s">/a2a/risk_agent</span>
+                 method=<span class="tk-s">"message/stream"</span>
+                 params.message=...──────────────────▶ <span class="tk-f">Server</span>
+
+                                              <span class="tk-f">Server</span> ──(4) delega──▶ <span class="tk-t">AgentExecutor</span>
+                                              <span class="tk-t">AgentExecutor</span> ──(5)──▶ <span class="tk-t">Runner(agent)</span>
+                                              <span class="tk-t">Runner</span> ──(6) pensa/tool calls──▶ <span class="tk-t">LLM</span>
+
+<span class="tk-f">Client</span> ◀════(7) SSE stream (Task updates)═════════════ <span class="tk-f">Server</span>
+<span class="tk-f">Client</span> ◀════(8) SSE final Message ═════════════════════ <span class="tk-f">Server</span>`)}`)}
+
+          ${callout("tip","fa-map","Regra prática","<strong>Server ≠ Agent.</strong> O Server é a infra HTTP; o Agent é o cérebro. Você pode ter 10 agents atrás de 1 Server (multi-agent app) e 1 agent atrás de 10 Servers (load balancing).")}
+        </div>`;
+      };
+
+      RENDERERS["arquitetura/agent-card"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Arquitetura — 2/5", "Agent Card — o currículo do agente",
+            "O Agent Card é a única fonte de verdade sobre o que um servidor A2A oferece. Ele descreve nome, URL, skills, modos I/O, autenticação e capacidades de streaming. É o que <strong>precisa existir antes</strong> de qualquer chamada útil.")}
+
+          ${section("O Agent Card do nosso Risk Specialist", "fa-id-card", `
+            ${codeBlock("risk_agent/agent.json (arquivo real do repo)",
+`{
+  <span class="tk-prop">"name"</span>: <span class="tk-s">"risk_specialist_bv"</span>,
+  <span class="tk-prop">"description"</span>: <span class="tk-s">"Agente Especialista de Risco de Crédito do Banco BV. Analisa operações complexas usando políticas internas (RAG) e frameworks regulatórios (IFRS 9, Res. BCB 4.966)."</span>,
+  <span class="tk-prop">"url"</span>: <span class="tk-s">"http://127.0.0.1:8080/a2a/risk_agent"</span>,
+  <span class="tk-prop">"version"</span>: <span class="tk-s">"1.0.0"</span>,
+  <span class="tk-prop">"protocolVersion"</span>: <span class="tk-s">"0.3.0"</span>,
+  <span class="tk-prop">"preferredTransport"</span>: <span class="tk-s">"JSONRPC"</span>,
+  <span class="tk-prop">"capabilities"</span>: { <span class="tk-prop">"streaming"</span>: <span class="tk-k">true</span> },
+  <span class="tk-prop">"defaultInputModes"</span>: [<span class="tk-s">"text/plain"</span>],
+  <span class="tk-prop">"defaultOutputModes"</span>: [<span class="tk-s">"text/plain"</span>],
+  <span class="tk-prop">"skills"</span>: [{
+    <span class="tk-prop">"id"</span>: <span class="tk-s">"assess_credit_risk"</span>,
+    <span class="tk-prop">"name"</span>: <span class="tk-s">"Assess credit risk"</span>,
+    <span class="tk-prop">"description"</span>: <span class="tk-s">"Analisa operações de crédito complexas. Recebe a pergunta do gestor e trechos RAG; retorna parecer técnico estruturado."</span>,
+    <span class="tk-prop">"tags"</span>: [<span class="tk-s">"risk"</span>, <span class="tk-s">"credit"</span>, <span class="tk-s">"banking"</span>, <span class="tk-s">"brazil"</span>, <span class="tk-s">"ifrs9"</span>, <span class="tk-s">"bcb-4966"</span>]
+  }]
+}`)}`)}
+
+          ${section("Campos obrigatórios x opcionais", "fa-list", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead><tr><th>Campo</th><th>Obrigatório</th><th>O que declara</th></tr></thead>
+                <tbody>
+                  ${[
+                    ["name","✅","Identificador human-friendly"],
+                    ["description","✅","Texto que o cliente mostra ao seu LLM para decidir se escolhe este agente"],
+                    ["url","✅","Endpoint JSON-RPC onde falar"],
+                    ["version","✅","Versão semântica do agente (não do protocolo)"],
+                    ["protocolVersion","⚠️","Versão da spec A2A (recomendado sempre setar)"],
+                    ["capabilities","✅","Flags como streaming, pushNotifications, stateTransitionHistory"],
+                    ["defaultInputModes / defaultOutputModes","✅","MIME types suportados (text/plain, application/json, image/png, ...)"],
+                    ["skills","✅","Lista de capacidades cognitivas (cada uma com id, name, description, tags)"],
+                    ["preferredTransport","Recomendado","JSONRPC | HTTP+JSON | GRPC"],
+                    ["securitySchemes / security","Condicional","Obrigatório se o agente exige autenticação"],
+                    ["provider, iconUrl, documentationUrl","Opcional","Metadados de apresentação"],
+                    ["additionalInterfaces","Opcional","Endpoints adicionais (ex: gRPC além de JSON-RPC)"],
+                    ["supportsAuthenticatedExtendedCard","Opcional","Indica se há um Agent Card completo atrás de auth"],
+                  ].map(r => `<tr><td class="font-mono text-blue-300">${r[0]}</td><td class="text-center">${r[1]}</td><td class="text-slate-300">${r[2]}</td></tr>`).join("")}
+                </tbody>
+              </table>
+            </div>`)}
+
+          ${section("O padrão well-known", "fa-key", `
+            <p class="text-slate-300 mb-3">A spec reserva o caminho <code class="font-mono bg-slate-800 px-2 rounded">/.well-known/agent-card.json</code> no host do servidor (RFC 8615).</p>
+            ${codeBlock("curl real contra o servidor local",
+`$ curl -s http://127.0.0.1:8080/a2a/risk_agent/.well-known/agent-card.json | jq .name
+<span class="tk-s">"risk_specialist_bv"</span>`)}
+            ${callout("warn","fa-circle-exclamation","Atenção",
+              "Até a v0.2 o caminho era <code class='font-mono'>/.well-known/agent.json</code>. Na v0.3 passou a ser <code class='font-mono'>/.well-known/agent-card.json</code> — foi exatamente esse o bug que corrigimos neste repositório (a variável <code class='font-mono'>AGENT_CARD_WELL_KNOWN_PATH</code> do pacote <code class='font-mono'>a2a</code> aponta para a nova rota).")}`)}
+
+          ${section("Extended Agent Card", "fa-id-card-clip", `
+            <p class="text-slate-300 mb-3">Alguns agentes expõem um Agent Card <strong>mínimo</strong> em público e um <strong>completo</strong> atrás de autenticação (inclui skills sensíveis, endpoints internos, etc.).</p>
+            <div class="card no-hover rounded-xl p-5">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <span class="pill bg-blue-600/20 text-blue-400"><i class="fas fa-earth-americas"></i> Público</span>
+                  <h4 class="font-bold text-white mt-2 mb-1">/.well-known/agent-card.json</h4>
+                  <p class="text-xs text-slate-400">Visível a qualquer cliente. Ideal só com o que um cliente precisa saber <em>para decidir se vai se autenticar</em>.</p>
+                </div>
+                <div>
+                  <span class="pill bg-purple-600/20 text-purple-400"><i class="fas fa-lock"></i> Autenticado</span>
+                  <h4 class="font-bold text-white mt-2 mb-1">agent/authenticatedExtendedCard</h4>
+                  <p class="text-xs text-slate-400">Retornado via método JSON-RPC após bearer token. Contém skills privadas, rate-limits, SLAs.</p>
+                </div>
+              </div>
+            </div>`)}
+        </div>`;
+      };
+
+      RENDERERS["arquitetura/executor"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Arquitetura — 3/5", "Agent Executor — o coração do servidor",
+            "O Agent Executor é o componente que recebe as chamadas decodificadas do transporte e as traduz para a execução do agente. É o <em>ponto único</em> em que o SDK do A2A encontra o framework do seu agente.")}
+
+          ${section("Responsabilidades do Executor", "fa-briefcase", `
+            <div class="grid grid-cols-2 gap-4">
+              ${[
+                ["Tradução","fa-language","Converte Message/Part A2A em input nativo do framework (p.ex. google.genai Content)."],
+                ["Execução","fa-play","Invoca o Runner do framework e consome o stream de eventos."],
+                ["Emissão de eventos","fa-broadcast-tower","Reenvia tool calls, thoughts, artifacts como TaskStatusUpdateEvent pelo SSE."],
+                ["Controle de estado","fa-compass","Atualiza o Task lifecycle (working, input-required, completed, failed)."],
+                ["Cancelamento","fa-ban","Recebe tasks/cancel e propaga para o Runner."],
+                ["Mapeamento de erros","fa-bug","Converte exceções internas em códigos de erro JSON-RPC padronizados."],
+              ].map(r => `
+                <div class="card rounded-xl p-4 flex items-start gap-3">
+                  <div class="w-8 h-8 bg-blue-600/20 text-blue-400 rounded-lg flex items-center justify-center flex-shrink-0"><i class="fas ${r[1]}"></i></div>
+                  <div>
+                    <h4 class="font-bold text-white text-sm">${r[0]}</h4>
+                    <p class="text-xs text-slate-400">${r[2]}</p>
+                  </div>
+                </div>`).join("")}
+            </div>`)}
+
+          ${section("O A2aAgentExecutor do ADK", "fa-gears", `
+            <p class="text-slate-300 mb-3">No Google ADK, o adaptador se chama <code class="font-mono">A2aAgentExecutor</code>. Ele é conectado automaticamente quando você chama <code class="font-mono">get_fast_api_app(a2a=True)</code>.</p>
+            ${codeBlock("google/adk/cli/fast_api.py (trecho da lib — reduzido)",
+`<span class="tk-c"># Para cada pasta em agents_dir que tenha agent.json:</span>
+<span class="tk-k">agent_executor</span> = <span class="tk-t">A2aAgentExecutor</span>(
+    runner=<span class="tk-f">create_a2a_runner_loader</span>(app_name),
+)
+
+<span class="tk-k">request_handler</span> = <span class="tk-t">DefaultRequestHandler</span>(
+    agent_executor=agent_executor,
+    task_store=<span class="tk-t">InMemoryTaskStore</span>(),
+    push_config_store=<span class="tk-t">InMemoryPushNotificationConfigStore</span>(),
+)
+
+<span class="tk-k">agent_card</span> = <span class="tk-t">AgentCard</span>(**<span class="tk-f">json.load</span>(p / <span class="tk-s">"agent.json"</span>))
+<span class="tk-k">a2a_app</span> = <span class="tk-t">A2AStarletteApplication</span>(
+    agent_card=agent_card,
+    http_handler=request_handler,
+)
+
+routes = a2a_app.<span class="tk-f">routes</span>(
+    rpc_url=<span class="tk-s">f"/a2a/{app_name}"</span>,
+    agent_card_url=<span class="tk-s">f"/a2a/{app_name}/.well-known/agent-card.json"</span>,
+)
+<span class="tk-k">for</span> route <span class="tk-k">in</span> routes:
+    app.router.routes.<span class="tk-f">append</span>(route)`)}
+            ${callout("info","fa-lightbulb","Por que isso importa",
+              "Esse é exatamente o caminho que nosso <code class='font-mono'>run_risk_agent.py</code> dispara. Saber isso ajuda a debugar: quando algo falha, saiba em qual dessa cadeia olhar (executor / handler / card / app).")}`)}
+        </div>`;
+      };
+
+      RENDERERS["arquitetura/task-manager"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Arquitetura — 4/5", "Task Manager — memória de execução",
+            "Toda interação A2A não-trivial vira uma <strong>Task</strong>. O Task Manager persiste o estado dessas tarefas para que o cliente possa buscar atualizações, cancelar, ou assinar push notifications.")}
+
+          ${section("O que é uma Task", "fa-clipboard-list", `
+            <div class="card no-hover rounded-xl p-6">
+              <p class="text-slate-300 mb-4">Uma Task é uma execução unitária disparada pelo cliente. Ela tem:</p>
+              <div class="grid grid-cols-4 gap-3 text-center text-xs">
+                ${[
+                  ["taskId","UUID único","fa-fingerprint","text-blue-400"],
+                  ["contextId","Agrupa tasks correlatas","fa-link","text-purple-400"],
+                  ["status","Estado atual + timestamp","fa-traffic-light","text-amber-400"],
+                  ["history","Mensagens trocadas","fa-clock-rotate-left","text-green-400"],
+                  ["artifacts","Outputs produzidos","fa-file","text-pink-400"],
+                  ["metadata","Campos livres","fa-tags","text-slate-400"],
+                  ["pushNotificationConfig","Webhooks","fa-bell","text-red-400"],
+                  ["cancelable","Permite tasks/cancel","fa-ban","text-orange-400"],
+                ].map(r => `
+                  <div class="rounded-lg p-3 bg-slate-800/50 border border-slate-700">
+                    <i class="fas ${r[2]} ${r[3]} text-lg mb-1"></i>
+                    <div class="font-bold text-white text-[11px]">${r[0]}</div>
+                    <div class="text-[10px] text-slate-500 leading-tight">${r[1]}</div>
+                  </div>`).join("")}
+              </div>
+            </div>`)}
+
+          ${section("Armazenamento de tasks", "fa-database", `
+            <div class="grid grid-cols-3 gap-4">
+              ${[
+                ["InMemoryTaskStore","Padrão nos SDKs","Tudo em RAM. Perde tudo no restart. Ideal para dev/teste.","text-amber-400"],
+                ["SQL / Redis","Produção típica","Persistência durável. Permite cancelamento e reconexão entre réplicas.","text-green-400"],
+                ["Distributed","Casos avançados","Sharding por contextId. Usado em plataformas multi-tenant.","text-purple-400"],
+              ].map(r => `
+                <div class="card rounded-xl p-5">
+                  <div class="pill bg-slate-800 ${r[3]}">${r[1]}</div>
+                  <h4 class="font-bold text-white mt-2 mb-1">${r[0]}</h4>
+                  <p class="text-xs text-slate-400">${r[2]}</p>
+                </div>`).join("")}
+            </div>
+            ${callout("warn","fa-triangle-exclamation","Gotcha do nosso projeto",
+              "O Risk Specialist usa <code class='font-mono'>InMemoryTaskStore</code>. Se reiniciarmos o servidor enquanto uma task estiver <em>input-required</em>, perdemos a sessão. Em produção, troque por um store persistente.")}`)}
+
+          ${section("Operações de Task no protocolo", "fa-bolt", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead><tr><th>Método JSON-RPC</th><th>O que faz</th></tr></thead>
+                <tbody>
+                  ${[
+                    ["tasks/get","Retorna snapshot completo da task (status, history, artifacts)."],
+                    ["tasks/cancel","Marca a task como canceled se o Executor respeitar."],
+                    ["tasks/pushNotificationConfig/set","Registra/atualiza webhook para updates assíncronos."],
+                    ["tasks/pushNotificationConfig/get","Consulta webhook atual."],
+                    ["tasks/resubscribe","Reabre um stream SSE para uma task existente (reconexão)."],
+                  ].map(r => `<tr><td class="font-mono text-blue-300">${r[0]}</td><td class="text-slate-300">${r[1]}</td></tr>`).join("")}
+                </tbody>
+              </table>
+            </div>`)}
+        </div>`;
+      };
+
+      RENDERERS["arquitetura/push"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Arquitetura — 5/5", "Push Notifications — quando o cliente não quer ficar esperando",
+            "Streaming SSE é ótimo para clientes online, mas agentes podem levar minutos ou horas. Push notifications invertem a direção: o servidor <strong>chama</strong> o cliente quando o estado muda.")}
+
+          ${section("Quando usar push", "fa-bell", `
+            <div class="grid grid-cols-2 gap-4">
+              <div class="card rounded-xl p-5">
+                <h4 class="font-bold text-white mb-2"><i class="fas fa-stopwatch text-amber-400 mr-2"></i>Tasks longas</h4>
+                <p class="text-sm text-slate-400">Análises regulatórias, batch processing, fine-tuning. Manter SSE aberto por horas é frágil.</p>
+              </div>
+              <div class="card rounded-xl p-5">
+                <h4 class="font-bold text-white mb-2"><i class="fas fa-user-clock text-blue-400 mr-2"></i>Human-in-the-loop</h4>
+                <p class="text-sm text-slate-400">Task entra em <em>input-required</em>. O cliente é notificado para pedir input ao usuário humano.</p>
+              </div>
+              <div class="card rounded-xl p-5">
+                <h4 class="font-bold text-white mb-2"><i class="fas fa-robot text-green-400 mr-2"></i>Cliente é servidor</h4>
+                <p class="text-sm text-slate-400">Quando o <em>cliente</em> também é um agente que roda em backend — não há ninguém segurando uma conexão.</p>
+              </div>
+              <div class="card rounded-xl p-5">
+                <h4 class="font-bold text-white mb-2"><i class="fas fa-bolt text-purple-400 mr-2"></i>Fan-out de eventos</h4>
+                <p class="text-sm text-slate-400">Uma task pode ser assinada por múltiplos webhooks (ex.: audit log + UI + sistema de alerta).</p>
+              </div>
+            </div>`)}
+
+          ${section("Configurando um webhook", "fa-gear", `
+            ${codeBlock("Requisição do cliente",
+`{
+  <span class="tk-prop">"jsonrpc"</span>: <span class="tk-s">"2.0"</span>,
+  <span class="tk-prop">"id"</span>: <span class="tk-s">"n1"</span>,
+  <span class="tk-prop">"method"</span>: <span class="tk-s">"tasks/pushNotificationConfig/set"</span>,
+  <span class="tk-prop">"params"</span>: {
+    <span class="tk-prop">"id"</span>: <span class="tk-s">"task-abc-123"</span>,
+    <span class="tk-prop">"pushNotificationConfig"</span>: {
+      <span class="tk-prop">"url"</span>: <span class="tk-s">"https://orchestrator.bv.com.br/a2a-callbacks"</span>,
+      <span class="tk-prop">"authentication"</span>: {
+        <span class="tk-prop">"schemes"</span>: [<span class="tk-s">"bearer"</span>],
+        <span class="tk-prop">"credentials"</span>: <span class="tk-s">"eyJhbGciOi..."</span>
+      }
+    }
+  }
+}`)}
+            <div class="mt-4"></div>
+            ${codeBlock("Chamada posterior do servidor → cliente",
+`<span class="tk-k">POST</span> https://orchestrator.bv.com.br/a2a-callbacks
+<span class="tk-prop">Authorization</span>: Bearer eyJhbGci...
+<span class="tk-prop">Content-Type</span>: application/json
+
+{
+  <span class="tk-prop">"taskId"</span>: <span class="tk-s">"task-abc-123"</span>,
+  <span class="tk-prop">"status"</span>: {
+    <span class="tk-prop">"state"</span>: <span class="tk-s">"completed"</span>,
+    <span class="tk-prop">"timestamp"</span>: <span class="tk-s">"2026-04-24T10:55:12Z"</span>
+  }
+}`)}`)}
+
+          ${callout("tip","fa-shield-halved","Segurança do webhook",
+            "A spec exige que o servidor entregue credenciais válidas (bearer/OAuth/mTLS) no webhook. Seu endpoint do lado do cliente deve validar — senão qualquer atacante pode forjar estados de task.")}
+        </div>`;
+      };
+
+      // --------- PROTOCOLO ---------
+      RENDERERS["protocolo/jsonrpc"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Protocolo — 1/5", "JSON-RPC 2.0 como base",
+            "A2A não reinventa a roda de mensageria: adota JSON-RPC 2.0 (RFC) como envelope padrão sobre HTTP. Entender JSON-RPC é 80% do caminho para dominar A2A.")}
+
+          ${section("Envelope JSON-RPC", "fa-envelope", `
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                ${codeBlock("Requisição",
+`{
+  <span class="tk-prop">"jsonrpc"</span>: <span class="tk-s">"2.0"</span>,
+  <span class="tk-prop">"id"</span>: <span class="tk-s">"req-42"</span>,
+  <span class="tk-prop">"method"</span>: <span class="tk-s">"message/send"</span>,
+  <span class="tk-prop">"params"</span>: { ... }
+}`)}
+              </div>
+              <div>
+                ${codeBlock("Resposta de sucesso",
+`{
+  <span class="tk-prop">"jsonrpc"</span>: <span class="tk-s">"2.0"</span>,
+  <span class="tk-prop">"id"</span>: <span class="tk-s">"req-42"</span>,
+  <span class="tk-prop">"result"</span>: { ... }
+}`)}
+                <div class="mt-4"></div>
+                ${codeBlock("Resposta de erro",
+`{
+  <span class="tk-prop">"jsonrpc"</span>: <span class="tk-s">"2.0"</span>,
+  <span class="tk-prop">"id"</span>: <span class="tk-s">"req-42"</span>,
+  <span class="tk-prop">"error"</span>: {
+    <span class="tk-prop">"code"</span>: <span class="tk-n">-32001</span>,
+    <span class="tk-prop">"message"</span>: <span class="tk-s">"TaskNotFound"</span>,
+    <span class="tk-prop">"data"</span>: { <span class="tk-prop">"taskId"</span>: <span class="tk-s">"..."</span> }
+  }
+}`)}
+              </div>
+            </div>`)}
+
+          ${section("Regras invioláveis", "fa-gavel", `
+            <div class="space-y-2">
+              ${[
+                ["jsonrpc deve ser exatamente <code class='font-mono'>&quot;2.0&quot;</code> (string).","fa-hashtag"],
+                ["id é opcional para notificações mas <strong>obrigatório</strong> para requisições em A2A.","fa-fingerprint"],
+                ["result e error são mutuamente exclusivos — nunca aparecem juntos.","fa-ban"],
+                ["HTTP status 200 mesmo em erro lógico (o erro está no body JSON).","fa-code"],
+                ["Batch (array de requests) é suportado pelo JSON-RPC mas <em>desencorajado</em> em A2A.","fa-layer-group"],
+              ].map(r => `
+                <div class="flex items-center gap-3 p-3 rounded bg-slate-800/40 border border-slate-700">
+                  <i class="fas ${r[1]} text-blue-400"></i>
+                  <span class="text-sm text-slate-300">${r[0]}</span>
+                </div>`).join("")}
+            </div>`)}
+
+          ${section("Por que JSON-RPC e não REST puro?", "fa-question-circle", `
+            <div class="card no-hover rounded-xl p-6">
+              <p class="text-slate-300 mb-4">A2A escolheu JSON-RPC por 4 motivos práticos:</p>
+              <div class="grid grid-cols-2 gap-3">
+                ${[
+                  ["Semântica de método","Em vez de inferir ação a partir de verbo HTTP + path, o method é explícito (message/send, tasks/cancel)."],
+                  ["Simetria com eventos","SSE também carrega objetos JSON-RPC-like — mesmo parser dos dois lados."],
+                  ["Erros estruturados","Códigos numéricos + data estruturado é mais útil que status HTTP genérico."],
+                  ["Transport-agnostic","Pode rodar sobre HTTP, WebSocket, stdio ou message bus sem mudança no payload."],
+                ].map(r => `
+                  <div class="rounded-lg p-3 bg-blue-600/5 border border-blue-600/20">
+                    <div class="font-bold text-blue-400 text-sm mb-1">${r[0]}</div>
+                    <div class="text-xs text-slate-400">${r[1]}</div>
+                  </div>`).join("")}
+              </div>
+            </div>`)}
+        </div>`;
+      };
+
+      RENDERERS["protocolo/metodos"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Protocolo — 2/5", "Métodos A2A — o vocabulário completo",
+            "A v0.3.0 define um conjunto enxuto de métodos JSON-RPC. Dominar esses nomes e o que cada um retorna é dominar a superfície do protocolo.")}
+
+          ${section("Tabela completa", "fa-list-ol", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead>
+                  <tr><th>Método</th><th>Direção</th><th>Retorno</th><th>Quando usar</th></tr>
+                </thead>
+                <tbody>
+                  ${[
+                    ["message/send","C→S","Task ou Message","Chamada síncrona simples. Servidor responde quando a task termina."],
+                    ["message/stream","C→S","SSE stream","Streaming em tempo real. Emite TaskStatusUpdateEvent + TaskArtifactUpdateEvent."],
+                    ["tasks/get","C→S","Task","Snapshot de uma task por taskId. Para polling."],
+                    ["tasks/cancel","C→S","Task (canceled)","Requisita cancelamento. Servidor não é obrigado a aceitar."],
+                    ["tasks/resubscribe","C→S","SSE stream","Reabre stream de uma task existente — útil após queda de conexão."],
+                    ["tasks/pushNotificationConfig/set","C→S","Config","Registra webhook para updates."],
+                    ["tasks/pushNotificationConfig/get","C→S","Config","Lê o webhook atual."],
+                    ["tasks/pushNotificationConfig/list","C→S","Lista","Lista todos os webhooks registrados."],
+                    ["tasks/pushNotificationConfig/delete","C→S","void","Remove webhook."],
+                    ["agent/authenticatedExtendedCard","C→S","AgentCard","Retorna Agent Card completo após autenticação."],
+                  ].map(r => `<tr>
+                    <td class="font-mono text-blue-300">${r[0]}</td>
+                    <td class="text-slate-400 text-xs">${r[1]}</td>
+                    <td class="text-slate-300 text-xs">${r[2]}</td>
+                    <td class="text-slate-300">${r[3]}</td>
+                  </tr>`).join("")}
+                </tbody>
+              </table>
+            </div>
+            <p class="text-xs text-slate-500 mt-3"><strong>C→S</strong> = cliente chama servidor. Webhooks (S→C) usam POST direto, não JSON-RPC method.</p>`)}
+
+          ${section("Árvore de decisão: qual método usar?", "fa-sitemap", `
+            ${codeBlock("Pseudo-fluxograma",
+`<span class="tk-k">if</span> preciso_mandar_mensagem_agora:
+    <span class="tk-k">if</span> agente.capabilities.streaming <span class="tk-k">and</span> quero_ver_tool_calls:
+        ──▶ message/stream   <span class="tk-c"># SSE</span>
+    <span class="tk-k">else</span>:
+        ──▶ message/send     <span class="tk-c"># síncrono</span>
+
+<span class="tk-k">elif</span> quero_estado_de_uma_task_que_já_existe:
+    ──▶ tasks/get
+
+<span class="tk-k">elif</span> caiu_a_conexão_e_quero_retomar_stream:
+    ──▶ tasks/resubscribe
+
+<span class="tk-k">elif</span> quero_ser_notificado_depois:
+    ──▶ tasks/pushNotificationConfig/set
+
+<span class="tk-k">elif</span> quero_abortar:
+    ──▶ tasks/cancel`)}`)}
+        </div>`;
+      };
+
+      RENDERERS["protocolo/streaming"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Protocolo — 3/5", "Streaming com Server-Sent Events (SSE)",
+            "Quando <code class='font-mono'>capabilities.streaming = true</code>, o cliente pode abrir uma conexão HTTP que permanece aberta e recebe eventos conforme o agente pensa.")}
+
+          ${section("Como é uma conexão SSE", "fa-wave-square", `
+            ${codeBlock("POST /a2a/risk_agent com method=message/stream",
+`HTTP/1.1 <span class="tk-n">200</span> OK
+<span class="tk-prop">Content-Type</span>: text/event-stream
+<span class="tk-prop">Cache-Control</span>: no-cache
+<span class="tk-prop">Connection</span>: keep-alive
+
+data: {"jsonrpc":"2.0","id":"req-1","result":{"kind":"status-update","taskId":"t-1","status":{"state":"<span class="tk-s">submitted</span>"}}}
+
+data: {"jsonrpc":"2.0","id":"req-1","result":{"kind":"status-update","taskId":"t-1","status":{"state":"<span class="tk-s">working</span>","message":{"role":"agent","parts":[{"kind":"text","text":"Consultando política..."}]}}}}
+
+data: {"jsonrpc":"2.0","id":"req-1","result":{"kind":"artifact-update","taskId":"t-1","artifact":{"artifactId":"a-1","parts":[{"kind":"text","text":"Parecer Técnico:\\n..."}]}}}
+
+data: {"jsonrpc":"2.0","id":"req-1","result":{"kind":"status-update","taskId":"t-1","status":{"state":"<span class="tk-s">completed</span>"},"final":<span class="tk-k">true</span>}}`)}`)}
+
+          ${section("Tipos de evento no stream", "fa-list", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead><tr><th>kind</th><th>Significado</th><th>Campos-chave</th></tr></thead>
+                <tbody>
+                  ${[
+                    ["status-update","Mudança de estado da task","taskId, status.state, status.message, final"],
+                    ["artifact-update","Produção incremental de um artifact","taskId, artifact.artifactId, artifact.parts, lastChunk"],
+                    ["message","Mensagem intermediária do agente","message.role, message.parts"],
+                    ["task","Snapshot completo da task","id, status, history, artifacts"],
+                  ].map(r => `<tr><td class="font-mono text-blue-300">${r[0]}</td><td class="text-slate-300">${r[1]}</td><td class="font-mono text-xs text-amber-300">${r[2]}</td></tr>`).join("")}
+                </tbody>
+              </table>
+            </div>`)}
+
+          ${section("Quando encerrar o stream", "fa-stop-circle", `
+            <div class="space-y-2">
+              <div class="flex items-center gap-3 p-3 rounded bg-slate-800/40 border border-slate-700">
+                <i class="fas fa-flag-checkered text-green-400"></i>
+                <div class="text-sm text-slate-300">Quando chega um evento com <code class="font-mono text-amber-300">"final": true</code> <strong>ou</strong> estado <span class="pill bg-green-600/20 text-green-400">completed</span> / <span class="pill bg-red-600/20 text-red-400">failed</span> / <span class="pill bg-slate-600/20 text-slate-300">canceled</span>.</div>
+              </div>
+              <div class="flex items-center gap-3 p-3 rounded bg-slate-800/40 border border-slate-700">
+                <i class="fas fa-pause text-amber-400"></i>
+                <div class="text-sm text-slate-300">Se chega <span class="pill bg-orange-600/20 text-orange-400">input-required</span>, o servidor fecha o stream aguardando o cliente mandar nova message/send com o mesmo taskId.</div>
+              </div>
+              <div class="flex items-center gap-3 p-3 rounded bg-slate-800/40 border border-slate-700">
+                <i class="fas fa-rotate-right text-blue-400"></i>
+                <div class="text-sm text-slate-300">Para retomar um stream interrompido, use <code class="font-mono text-amber-300">tasks/resubscribe</code>.</div>
+              </div>
+            </div>`)}
+        </div>`;
+      };
+
+      RENDERERS["protocolo/transports"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Protocolo — 4/5", "Transports — JSON-RPC, REST e gRPC",
+            "A spec v0.3.0 oficializou três transportes. O campo <code class='font-mono'>preferredTransport</code> do Agent Card diz qual o servidor prefere, e <code class='font-mono'>additionalInterfaces</code> lista alternativas.")}
+
+          ${section("Os três transports", "fa-plug", `
+            <div class="grid grid-cols-3 gap-4">
+              ${[
+                ["JSONRPC","fa-code","#3b82f6","HTTP POST de objetos JSON-RPC.","Default. É o que nosso projeto usa."],
+                ["HTTP+JSON (REST)","fa-link","#22c55e","Rotas REST: POST /messages, GET /tasks/{id}, etc.","Mais natural para integrar com API gateways."],
+                ["GRPC","fa-bolt","#a855f7","Protobuf binary sobre HTTP/2.","Menor latência, streaming nativo, ideal intra-cluster."],
+              ].map(r => `
+                <div class="card rounded-xl p-5">
+                  <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style="background:${r[2]}22;color:${r[2]}">
+                    <i class="fas ${r[1]} text-xl"></i>
+                  </div>
+                  <h4 class="font-bold text-white mb-1">${r[0]}</h4>
+                  <p class="text-sm text-slate-400 mb-2">${r[3]}</p>
+                  <p class="text-xs text-slate-500">${r[4]}</p>
+                </div>`).join("")}
+            </div>`)}
+
+          ${section("Quando escolher cada um", "fa-scale-balanced", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead><tr><th>Cenário</th><th>Transport recomendado</th><th>Justificativa</th></tr></thead>
+                <tbody>
+                  ${[
+                    ["Prototipagem, dev local","JSONRPC","Zero config, debug fácil com curl"],
+                    ["Integração com API Management / WAF","REST","Semântica padrão de verbos e paths"],
+                    ["Comunicação intra-VPC de baixa latência","gRPC","Binary, HTTP/2 multiplexing, schemas tipados"],
+                    ["Browser consumindo direto (raro)","REST + SSE","JSON-RPC em browser é incomum"],
+                    ["Edge / serverless","JSONRPC ou REST","gRPC exige HTTP/2 nativo, nem todos edges suportam"],
+                  ].map(r => `<tr><td class="text-slate-300">${r[0]}</td><td class="font-mono text-blue-300">${r[1]}</td><td class="text-slate-400 text-xs">${r[2]}</td></tr>`).join("")}
+                </tbody>
+              </table>
+            </div>`)}
+
+          ${section("Declaração no Agent Card", "fa-id-card-clip", `
+            ${codeBlock("Exemplo multi-transport",
+`{
+  <span class="tk-prop">"preferredTransport"</span>: <span class="tk-s">"GRPC"</span>,
+  <span class="tk-prop">"url"</span>: <span class="tk-s">"grpc://agent.example.com:50051"</span>,
+  <span class="tk-prop">"additionalInterfaces"</span>: [
+    {
+      <span class="tk-prop">"transport"</span>: <span class="tk-s">"JSONRPC"</span>,
+      <span class="tk-prop">"url"</span>: <span class="tk-s">"https://agent.example.com/a2a/rpc"</span>
+    },
+    {
+      <span class="tk-prop">"transport"</span>: <span class="tk-s">"HTTP+JSON"</span>,
+      <span class="tk-prop">"url"</span>: <span class="tk-s">"https://agent.example.com/a2a/rest"</span>
+    }
+  ]
+}`)}`)}
+        </div>`;
+      };
+
+      RENDERERS["protocolo/well-known"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Protocolo — 5/5", "Discovery e well-known URIs",
+            "Como o cliente descobre que um agente existe? A A2A reutiliza o padrão RFC 8615 de well-known URIs e deixa explícito o caminho <code class='font-mono'>/.well-known/agent-card.json</code>.")}
+
+          ${section("Padrões de descoberta", "fa-satellite-dish", `
+            <div class="space-y-3">
+              ${[
+                ["Hardcoded URL","Cliente tem o endpoint fixado em config. Mais simples, menos flexível.","fa-anchor","text-slate-400","Ex.: nosso <code class='font-mono'>ADK_RISK_AGENT_CARD_URL</code> no .env."],
+                ["Well-known discovery","Cliente recebe apenas o host, e busca <code class='font-mono'>/.well-known/agent-card.json</code>.","fa-compass","text-blue-400","Padrão recomendado para marketplaces."],
+                ["Registry central","Catálogo que lista agentes por capability.","fa-address-book","text-purple-400","Análogo a npm / PyPI para agentes."],
+                ["DNS-based","TXT records apontando para Agent Cards.","fa-globe","text-green-400","Experimental, pouco adotado."],
+              ].map(r => `
+                <div class="card rounded-xl p-4 flex gap-4 items-start">
+                  <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-slate-800"><i class="fas ${r[2]} ${r[3]}"></i></div>
+                  <div class="flex-1">
+                    <h4 class="font-bold text-white mb-1">${r[0]}</h4>
+                    <p class="text-sm text-slate-400 mb-1">${r[1]}</p>
+                    <p class="text-xs text-slate-500">${r[4]}</p>
+                  </div>
+                </div>`).join("")}
+            </div>`)}
+
+          ${section("Múltiplos agentes, um host", "fa-server", `
+            <p class="text-slate-300 mb-3">Se um host abriga <em>vários</em> agentes, o padrão do ADK é prefixar com o nome do agente:</p>
+            ${codeBlock("Exemplo real (1 servidor, N agentes)",
+`<span class="tk-c"># Host:</span>
+https://agents.bv.com.br
+
+<span class="tk-c"># Rotas servidas pelo mesmo uvicorn:</span>
+/a2a/risk_specialist/.well-known/agent-card.json   ──▶ <span class="tk-f">Risk Specialist</span>
+/a2a/risk_specialist                                ──▶ JSON-RPC endpoint
+/a2a/compliance_analyst/.well-known/agent-card.json ──▶ <span class="tk-f">Compliance Analyst</span>
+/a2a/compliance_analyst                             ──▶ JSON-RPC endpoint`)}
+            ${callout("info","fa-lightbulb","No nosso projeto",
+              "O ADK registrou apenas <code class='font-mono'>/a2a/risk_agent/*</code> porque só temos essa pasta sob agents_dir. Adicionar <code class='font-mono'>compliance_agent/</code> com um <code class='font-mono'>agent.json</code> subiria um segundo agente no mesmo servidor automaticamente.")}`)}
+        </div>`;
+      };
+
+      // --------- MENSAGENS ---------
+      RENDERERS["mensagens/message"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Mensagens — 1/4", "Message e Parts — o átomo da comunicação",
+            "Toda troca em A2A é uma Message, que contém role + parts. Cada Part tem um kind (text, file, data) e carrega um pedaço do conteúdo. Essa estrutura suporta multimodalidade sem mudar o envelope.")}
+
+          ${section("Anatomia de uma Message", "fa-dna", `
+            ${codeBlock("Message schema (TS-style)",
+`<span class="tk-k">interface</span> <span class="tk-t">Message</span> {
+  <span class="tk-prop">role</span>: <span class="tk-s">"user"</span> | <span class="tk-s">"agent"</span>;
+  <span class="tk-prop">parts</span>: <span class="tk-t">Part</span>[];
+  <span class="tk-prop">messageId</span>?: <span class="tk-t">string</span>;
+  <span class="tk-prop">taskId</span>?: <span class="tk-t">string</span>;
+  <span class="tk-prop">contextId</span>?: <span class="tk-t">string</span>;
+  <span class="tk-prop">metadata</span>?: <span class="tk-t">Record</span>&lt;<span class="tk-t">string</span>, <span class="tk-t">any</span>&gt;;
+}
+
+<span class="tk-k">type</span> <span class="tk-t">Part</span> = <span class="tk-t">TextPart</span> | <span class="tk-t">FilePart</span> | <span class="tk-t">DataPart</span>;`)}`)}
+
+          ${section("Os 3 tipos de Part", "fa-shapes", `
+            <div class="grid grid-cols-3 gap-4">
+              <div class="card rounded-xl p-5">
+                <div class="pill bg-blue-600/20 text-blue-400 mb-2"><i class="fas fa-align-left"></i> TextPart</div>
+                <p class="text-sm text-slate-400 mb-3">Texto puro. É o caso mais comum.</p>
+                ${codeBlock("",
+`{
+  <span class="tk-prop">"kind"</span>: <span class="tk-s">"text"</span>,
+  <span class="tk-prop">"text"</span>: <span class="tk-s">"Avalie risco..."</span>
+}`)}
+              </div>
+              <div class="card rounded-xl p-5">
+                <div class="pill bg-amber-600/20 text-amber-400 mb-2"><i class="fas fa-file"></i> FilePart</div>
+                <p class="text-sm text-slate-400 mb-3">Binário por <em>bytes</em> (base64) ou <em>uri</em>.</p>
+                ${codeBlock("",
+`{
+  <span class="tk-prop">"kind"</span>: <span class="tk-s">"file"</span>,
+  <span class="tk-prop">"file"</span>: {
+    <span class="tk-prop">"name"</span>: <span class="tk-s">"balanco.pdf"</span>,
+    <span class="tk-prop">"mimeType"</span>: <span class="tk-s">"application/pdf"</span>,
+    <span class="tk-prop">"bytes"</span>: <span class="tk-s">"JVBERi0xLjQK..."</span>
+  }
+}`)}
+              </div>
+              <div class="card rounded-xl p-5">
+                <div class="pill bg-purple-600/20 text-purple-400 mb-2"><i class="fas fa-database"></i> DataPart</div>
+                <p class="text-sm text-slate-400 mb-3">JSON estruturado — ideal para payloads técnicos.</p>
+                ${codeBlock("",
+`{
+  <span class="tk-prop">"kind"</span>: <span class="tk-s">"data"</span>,
+  <span class="tk-prop">"data"</span>: {
+    <span class="tk-prop">"valor"</span>: <span class="tk-n">50000000</span>,
+    <span class="tk-prop">"rating"</span>: <span class="tk-s">"B"</span>
+  }
+}`)}
+              </div>
+            </div>`)}
+
+          ${section("Como o projeto BV usa Parts", "fa-code", `
+            <p class="text-slate-300 mb-3">Hoje nosso <code class="font-mono">adk_client.py</code> serializa o payload como <strong>JSON dentro de um TextPart</strong> — padrão consagrado do ADK mesmo que DataPart seja mais semântico:</p>
+            ${codeBlock("src/clients/adk_client.py (trecho)",
+`<span class="tk-c"># O payload estruturado é serializado e embutido no texto</span>
+message_text = payload.<span class="tk-f">model_dump_json</span>(indent=<span class="tk-n">2</span>)
+message = types.<span class="tk-t">Content</span>(
+    role=<span class="tk-s">"user"</span>,
+    parts=[types.<span class="tk-t">Part</span>(text=message_text)]
+)`)}
+            ${callout("tip","fa-rocket","Melhoria possível",
+              "Usar <strong>DataPart</strong> em vez de serializar JSON para texto é mais limpo, mas nem todos os agentes remotos aceitam data. O ADK hoje suporta melhor TextPart — por isso mantemos assim.")}`)}
+        </div>`;
+      };
+
+      RENDERERS["mensagens/task-lifecycle"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Mensagens — 2/4", "Task Lifecycle — estados canônicos",
+            "Toda Task A2A transita por uma máquina de estados finita. O cliente nunca vê a task em um estado inválido — é responsabilidade do servidor.")}
+
+          ${section("Diagrama de estados", "fa-diagram-project", `
+            <div class="card no-hover rounded-xl p-6">
+              <div class="flex items-center justify-center flex-wrap gap-4">
+                <div class="lifecycle-node state-submitted"><i class="fas fa-paper-plane mr-1"></i>submitted</div>
+                <i class="fas fa-arrow-right text-slate-600"></i>
+                <div class="lifecycle-node state-working"><i class="fas fa-spinner mr-1"></i>working</div>
+                <i class="fas fa-arrow-right text-slate-600"></i>
+                <div class="lifecycle-node state-input"><i class="fas fa-user mr-1"></i>input-required</div>
+                <i class="fas fa-arrow-right text-slate-600"></i>
+                <div class="lifecycle-node state-working"><i class="fas fa-rotate mr-1"></i>working</div>
+                <i class="fas fa-arrow-right text-slate-600"></i>
+                <div class="lifecycle-node state-completed"><i class="fas fa-check mr-1"></i>completed</div>
+              </div>
+              <div class="flex items-center justify-center gap-4 mt-4">
+                <span class="text-xs text-slate-500">Estados terminais alternativos:</span>
+                <div class="lifecycle-node state-failed"><i class="fas fa-times mr-1"></i>failed</div>
+                <div class="lifecycle-node state-failed" style="border-color:#64748b;color:#94a3b8"><i class="fas fa-ban mr-1"></i>canceled</div>
+                <div class="lifecycle-node state-failed" style="border-color:#d97706;color:#fbbf24"><i class="fas fa-ban mr-1"></i>rejected</div>
+              </div>
+            </div>`)}
+
+          ${section("Significado de cada estado", "fa-list-check", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead><tr><th>Estado</th><th>Terminal?</th><th>Significado</th></tr></thead>
+                <tbody>
+                  ${[
+                    ["submitted","Não","Servidor aceitou e enfileirou."],
+                    ["working","Não","Agente está raciocinando/chamando tools."],
+                    ["input-required","Não","Agente parou e precisa de mais input do cliente."],
+                    ["auth-required","Não","Agente precisa de credenciais adicionais (OAuth step-up)."],
+                    ["completed","Sim ✅","Agente produziu resposta final com sucesso."],
+                    ["failed","Sim ❌","Erro interno (LLM timeout, tool falhou)."],
+                    ["canceled","Sim 🛑","Cliente chamou tasks/cancel e servidor aceitou."],
+                    ["rejected","Sim 🚫","Servidor recusou a task (ex.: autorização)."],
+                    ["unknown","-","Não deveria aparecer — indica implementação quebrada."],
+                  ].map(r => `<tr><td class="font-mono text-blue-300">${r[0]}</td><td>${r[1]}</td><td class="text-slate-300">${r[2]}</td></tr>`).join("")}
+                </tbody>
+              </table>
+            </div>`)}
+
+          ${callout("warn","fa-triangle-exclamation","Gotcha",
+            "Estados terminais <strong>não mudam</strong> depois. Se uma task já está <code class='font-mono'>completed</code>, chamar <code class='font-mono'>tasks/cancel</code> retorna erro <code class='font-mono'>TaskNotCancelable</code>.")}
+        </div>`;
+      };
+
+      RENDERERS["mensagens/artifacts"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Mensagens — 3/4", "Artifacts — os entregáveis da Task",
+            "Se Messages são a conversa, Artifacts são os <strong>entregáveis</strong>. Um relatório de risco, um PDF gerado, um CSV — qualquer output nomeado que o cliente vai consumir ou armazenar.")}
+
+          ${section("Artifact schema", "fa-box-archive", `
+            ${codeBlock("Schema",
+`<span class="tk-k">interface</span> <span class="tk-t">Artifact</span> {
+  <span class="tk-prop">artifactId</span>: <span class="tk-t">string</span>;
+  <span class="tk-prop">name</span>?: <span class="tk-t">string</span>;
+  <span class="tk-prop">description</span>?: <span class="tk-t">string</span>;
+  <span class="tk-prop">parts</span>: <span class="tk-t">Part</span>[];   <span class="tk-c">// mesmas Parts de Message</span>
+  <span class="tk-prop">metadata</span>?: <span class="tk-t">Record</span>&lt;<span class="tk-t">string</span>, <span class="tk-t">any</span>&gt;;
+  <span class="tk-prop">extensions</span>?: <span class="tk-t">string</span>[];
+}`)}`)}
+
+          ${section("Message vs Artifact — quando usar cada um", "fa-scale-balanced", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead><tr><th>Propriedade</th><th>Message</th><th>Artifact</th></tr></thead>
+                <tbody>
+                  <tr><td>Papel</td><td>Conversa em andamento</td><td>Entregável final/versionado</td></tr>
+                  <tr><td>Identificador</td><td>messageId (opcional)</td><td>artifactId (obrigatório)</td></tr>
+                  <tr><td>Vida útil</td><td>Dura enquanto a task existir</td><td>Citado e reutilizado depois</td></tr>
+                  <tr><td>Streaming</td><td>Todo de uma vez</td><td>Incremental (lastChunk)</td></tr>
+                  <tr><td>Analogia</td><td>e-mail</td><td>anexo nomeado</td></tr>
+                </tbody>
+              </table>
+            </div>`)}
+
+          ${section("Streaming incremental de Artifact", "fa-layer-group", `
+            ${codeBlock("Evento SSE: artifact-update",
+`data: {
+  <span class="tk-prop">"kind"</span>: <span class="tk-s">"artifact-update"</span>,
+  <span class="tk-prop">"taskId"</span>: <span class="tk-s">"t-42"</span>,
+  <span class="tk-prop">"artifact"</span>: {
+    <span class="tk-prop">"artifactId"</span>: <span class="tk-s">"parecer-final"</span>,
+    <span class="tk-prop">"parts"</span>: [{<span class="tk-prop">"kind"</span>: <span class="tk-s">"text"</span>, <span class="tk-prop">"text"</span>: <span class="tk-s">"## Classificação de Risco\\nAlto..."</span>}]
+  },
+  <span class="tk-prop">"append"</span>: <span class="tk-k">true</span>,
+  <span class="tk-prop">"lastChunk"</span>: <span class="tk-k">false</span>
+}`)}
+            <p class="text-sm text-slate-400 mt-3"><code class="font-mono text-amber-300">append=true</code> diz ao cliente para concatenar ao artifactId anterior. <code class="font-mono text-amber-300">lastChunk=true</code> marca fim desse artifact.</p>`)}
+        </div>`;
+      };
+
+      RENDERERS["mensagens/errors"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Mensagens — 4/4", "Erros padronizados",
+            "A2A define códigos de erro JSON-RPC específicos, numerados. Saber interpretá-los economiza horas de debug.")}
+
+          ${section("Códigos de erro", "fa-bug", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead><tr><th>Código</th><th>Nome</th><th>Significado</th></tr></thead>
+                <tbody>
+                  ${[
+                    ["-32700","ParseError","JSON inválido recebido"],
+                    ["-32600","InvalidRequest","Envelope JSON-RPC mal-formado"],
+                    ["-32601","MethodNotFound","O método chamado não é suportado pelo agente"],
+                    ["-32602","InvalidParams","Params não batem com o schema"],
+                    ["-32603","InternalError","Erro genérico do servidor"],
+                    ["-32001","TaskNotFound","taskId inexistente"],
+                    ["-32002","TaskNotCancelable","Task já em estado terminal"],
+                    ["-32003","PushNotificationNotSupported","Agente não tem capabilities.pushNotifications"],
+                    ["-32004","UnsupportedOperation","Operação não suportada por este agente"],
+                    ["-32005","ContentTypeNotSupported","MIME type fora dos defaultInputModes"],
+                    ["-32006","InvalidAgentResponse","Resposta do agente não cumpre o schema"],
+                    ["-32007","AuthenticatedExtendedCardNotConfigured","Agent Card público não existe na versão extendida"],
+                  ].map(r => `<tr><td class="font-mono text-amber-300">${r[0]}</td><td class="font-mono text-blue-300">${r[1]}</td><td class="text-slate-300">${r[2]}</td></tr>`).join("")}
+                </tbody>
+              </table>
+            </div>`)}
+
+          ${callout("tip","fa-terminal","Debug rápido",
+            "Quando você receber <code class='font-mono'>-32602 InvalidParams</code>, 90% das vezes é um MIME type errado ou falta de <code class='font-mono'>role</code> na message. Use <code class='font-mono'>curl -v</code> para inspecionar o body exato.")}
+        </div>`;
+      };
+
+      // --------- SEGURANCA ---------
+      RENDERERS["seguranca/auth"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Segurança — 1/3", "Autenticação — securitySchemes",
+            "A2A reutiliza o vocabulário de <code class='font-mono'>securitySchemes</code> do OpenAPI 3.0 dentro do Agent Card. Zero invenção, zero lock-in.")}
+
+          ${section("Schemes mais usados", "fa-key", `
+            <div class="grid grid-cols-2 gap-4">
+              ${[
+                ["bearer","HTTP header <code class='font-mono'>Authorization: Bearer &lt;jwt&gt;</code>","fa-ticket","blue"],
+                ["apiKey","Header/query/cookie com chave fixa","fa-fingerprint","amber"],
+                ["oauth2","Fluxos OAuth 2.0 (client_credentials / authorization_code)","fa-right-to-bracket","purple"],
+                ["openIdConnect","OIDC sobre OAuth2","fa-id-card","green"],
+                ["mutualTLS","Cliente apresenta certificado","fa-certificate","red"],
+              ].map(r => `
+                <div class="card rounded-xl p-4">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-${r[3]}-600/20 text-${r[3]}-400"><i class="fas ${r[2]}"></i></div>
+                    <h4 class="font-bold text-white text-sm font-mono">${r[0]}</h4>
+                  </div>
+                  <p class="text-xs text-slate-400">${r[1]}</p>
+                </div>`).join("")}
+            </div>`)}
+
+          ${section("Exemplo de Agent Card autenticado", "fa-file-shield", `
+            ${codeBlock("agent-card.json com OAuth2",
+`{
+  ...
+  <span class="tk-prop">"securitySchemes"</span>: {
+    <span class="tk-prop">"bv_oauth"</span>: {
+      <span class="tk-prop">"type"</span>: <span class="tk-s">"oauth2"</span>,
+      <span class="tk-prop">"flows"</span>: {
+        <span class="tk-prop">"clientCredentials"</span>: {
+          <span class="tk-prop">"tokenUrl"</span>: <span class="tk-s">"https://auth.bv.com.br/oauth2/token"</span>,
+          <span class="tk-prop">"scopes"</span>: {
+            <span class="tk-prop">"risk:read"</span>: <span class="tk-s">"Ler pareceres"</span>,
+            <span class="tk-prop">"risk:assess"</span>: <span class="tk-s">"Solicitar análise"</span>
+          }
+        }
+      }
+    }
+  },
+  <span class="tk-prop">"security"</span>: [{ <span class="tk-prop">"bv_oauth"</span>: [<span class="tk-s">"risk:assess"</span>] }]
+}`)}`)}
+        </div>`;
+      };
+
+      RENDERERS["seguranca/authz"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Segurança — 2/3", "Autorização e escopos",
+            "Autenticar responde <em>quem</em>. Autorizar responde <em>o que você pode fazer</em>. Em A2A a autorização fica a cargo do servidor — mas há padrões claros.")}
+
+          ${section("Três camadas de autorização", "fa-layer-group", `
+            <div class="space-y-3">
+              ${[
+                ["Transport","TLS/mTLS. Garante que só clientes confiáveis abrem conexão.","fa-lock","blue"],
+                ["Token","JWT com scopes / claims. Decidido na fronteira (API Gateway).","fa-ticket","purple"],
+                ["Policy","RBAC/ABAC dentro do Executor: cliente X pode invocar skill Y?","fa-user-shield","green"],
+              ].map(r => `
+                <div class="card rounded-xl p-4 flex gap-4 items-start">
+                  <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-${r[3]}-600/20 text-${r[3]}-400"><i class="fas ${r[2]}"></i></div>
+                  <div>
+                    <h4 class="font-bold text-white mb-1">${r[0]}</h4>
+                    <p class="text-sm text-slate-400">${r[1]}</p>
+                  </div>
+                </div>`).join("")}
+            </div>`)}
+
+          ${callout("danger","fa-shield-halved","Em banking",
+            "Sempre aplique as 3 camadas. TLS só não basta — tokens expiram e scopes limitam blast radius. Nunca dê um scope <code class='font-mono'>*</code> para agentes.")}
+        </div>`;
+      };
+
+      RENDERERS["seguranca/tls"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Segurança — 3/3", "TLS e boas práticas",
+            "O protocolo A2A não exige TLS, mas nenhum deploy sério deve rodar sem ele. Esta aula cobre os checkpoints mínimos.")}
+
+          ${section("Checklist de produção", "fa-clipboard-check", `
+            <div class="grid grid-cols-2 gap-3">
+              ${[
+                "TLS 1.2+ obrigatório; 1.3 preferível",
+                "HSTS com max-age ≥ 6 meses",
+                "Certificados de CA reconhecida (Let's Encrypt, DigiCert)",
+                "Pinning só em cliente interno; evite em clientes públicos",
+                "Audit logs com taskId e contextId",
+                "Rate limiting por cliente (token bucket)",
+                "Timeouts agressivos (30s default, configurável)",
+                "Sanitize logs — nunca logue message.parts.text completo",
+              ].map(t => `
+                <div class="flex items-center gap-3 p-3 rounded bg-slate-800/40 border border-slate-700">
+                  <i class="fas fa-check text-green-400"></i>
+                  <span class="text-sm text-slate-300">${t}</span>
+                </div>`).join("")}
+            </div>`)}
+
+          ${callout("warn","fa-bug","O bug real que tivemos",
+            "No primeiro teste do nosso projeto, <code class='font-mono'>RemoteA2aAgent</code> falhou com <code class='font-mono'>SSL: CERTIFICATE_VERIFY_FAILED</code> porque o .env apontava para <code class='font-mono'>https://your-adk-endpoint.run.app</code> (host inexistente). Sempre valide URLs de Agent Card antes de subir cliente.")}
+        </div>`;
+      };
+
+      // --------- IMPLEMENTACAO ---------
+      RENDERERS["implementacao/adk"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Implementação — 1/5", "Google ADK como stack A2A",
+            "O Agent Development Kit (Google) tem suporte nativo a A2A desde v1.0. É a forma mais rápida de publicar um agente A2A em Python.")}
+
+          ${section("Peças do ADK relevantes", "fa-puzzle-piece", `
+            <div class="grid grid-cols-2 gap-4">
+              ${[
+                ["LlmAgent","Classe base do agente: model + instruction + tools.","fa-robot","blue"],
+                ["FunctionTool","Wrapper automático para funções Python serem chamadas pelo LLM.","fa-screwdriver-wrench","purple"],
+                ["Runner","Executa o loop Agent ↔ LLM, emitindo eventos.","fa-play","green"],
+                ["InMemoryRunner","Runner local com session em memória.","fa-memory","amber"],
+                ["RemoteA2aAgent","Cliente A2A — conecta em um Agent Card remoto.","fa-satellite-dish","pink"],
+                ["get_fast_api_app","Helper que converte uma pasta de agentes em servidor FastAPI A2A.","fa-server","red"],
+              ].map(r => `
+                <div class="card rounded-xl p-4 flex gap-3 items-start">
+                  <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-${r[3]}-600/20 text-${r[3]}-400 flex-shrink-0"><i class="fas ${r[2]}"></i></div>
+                  <div>
+                    <h4 class="font-bold text-white text-sm font-mono">${r[0]}</h4>
+                    <p class="text-xs text-slate-400">${r[1]}</p>
+                  </div>
+                </div>`).join("")}
+            </div>`)}
+
+          ${section("Estrutura de pastas canônica", "fa-folder-tree", `
+            ${codeBlock("Layout que o ADK espera",
+`projeto/
+├── <span class="tk-prop">agents_dir/</span>            <span class="tk-c"># passado para get_fast_api_app(agents_dir=".")</span>
+│   └── risk_agent/
+│       ├── __init__.py     <span class="tk-c"># reexporta root_agent</span>
+│       ├── agent.py        <span class="tk-c"># define root_agent = LlmAgent(...)</span>
+│       ├── agent.json      <span class="tk-c"># Agent Card estático (A2A)</span>
+│       └── tools.py        <span class="tk-c"># FunctionTools</span>
+├── run_risk_agent.py       <span class="tk-c"># entry-point com uvicorn</span>
+└── .env`)}
+            ${callout("info","fa-lightbulb","Regra de ouro do ADK 1.31+",
+              "<code class='font-mono'>agents_dir</code> é o <strong>pai</strong>. Cada subpasta com <code class='font-mono'>agent.json</code> vira um agente A2A. Se sua pasta for <code class='font-mono'>/home/bv/projeto/risk_agent</code>, passe <code class='font-mono'>agents_dir='/home/bv/projeto'</code> ou <code class='font-mono'>agents_dir='.'</code> com cwd correto.")}`)}
+        </div>`;
+      };
+
+      RENDERERS["implementacao/servidor"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Implementação — 2/5", "Construindo o servidor A2A do zero",
+            "Vamos passar linha por linha do nosso <code class='font-mono'>run_risk_agent.py</code> e <code class='font-mono'>risk_agent/*</code>. Tudo que está nesta seção é código real do repositório.")}
+
+          ${section("1. Definir o Agent (LlmAgent)", "fa-robot", `
+            ${codeBlock("risk_agent/agent.py",
+`<span class="tk-k">from</span> google.adk.agents <span class="tk-k">import</span> LlmAgent
+<span class="tk-k">from</span> .tools <span class="tk-k">import</span> check_regulatory_thresholds, search_credit_policies
+
+_INSTRUCTION = <span class="tk-s">"""Você é o Agente Especialista de Risco de Crédito do Banco BV.
+...
+Formato do Parecer Técnico (use exatamente estas seções):
+## Classificação de Risco
+## Fatores de Risco Identificados
+## Requisitos Regulatórios Aplicáveis
+## Recomendação
+## Referências de Política
+"""</span>
+
+root_agent = <span class="tk-t">LlmAgent</span>(
+    name=<span class="tk-s">"risk_specialist_bv"</span>,
+    model=<span class="tk-s">"gemini-2.5-flash"</span>,
+    description=<span class="tk-s">"..."</span>,
+    instruction=_INSTRUCTION,
+    tools=[search_credit_policies, check_regulatory_thresholds],
+)`)}`)}
+
+          ${section("2. Expor via __init__.py", "fa-file-code", `
+            ${codeBlock("risk_agent/__init__.py",
+`<span class="tk-c"># O agent-loader do ADK procura root_agent aqui</span>
+<span class="tk-k">from</span> .agent <span class="tk-k">import</span> root_agent
+__all__ = [<span class="tk-s">"root_agent"</span>]`)}`)}
+
+          ${section("3. Publicar o Agent Card estático", "fa-id-card", `
+            ${codeBlock("risk_agent/agent.json",
+`{
+  <span class="tk-prop">"name"</span>: <span class="tk-s">"risk_specialist_bv"</span>,
+  <span class="tk-prop">"description"</span>: <span class="tk-s">"Agente Especialista..."</span>,
+  <span class="tk-prop">"url"</span>: <span class="tk-s">"http://127.0.0.1:8080/a2a/risk_agent"</span>,
+  <span class="tk-prop">"version"</span>: <span class="tk-s">"1.0.0"</span>,
+  <span class="tk-prop">"protocolVersion"</span>: <span class="tk-s">"0.3.0"</span>,
+  <span class="tk-prop">"preferredTransport"</span>: <span class="tk-s">"JSONRPC"</span>,
+  <span class="tk-prop">"capabilities"</span>: { <span class="tk-prop">"streaming"</span>: <span class="tk-k">true</span> },
+  <span class="tk-prop">"defaultInputModes"</span>: [<span class="tk-s">"text/plain"</span>],
+  <span class="tk-prop">"defaultOutputModes"</span>: [<span class="tk-s">"text/plain"</span>],
+  <span class="tk-prop">"skills"</span>: [{
+    <span class="tk-prop">"id"</span>: <span class="tk-s">"assess_credit_risk"</span>,
+    <span class="tk-prop">"name"</span>: <span class="tk-s">"Assess credit risk"</span>,
+    <span class="tk-prop">"description"</span>: <span class="tk-s">"..."</span>,
+    <span class="tk-prop">"tags"</span>: [<span class="tk-s">"risk"</span>, <span class="tk-s">"credit"</span>, <span class="tk-s">"banking"</span>, <span class="tk-s">"brazil"</span>, <span class="tk-s">"ifrs9"</span>, <span class="tk-s">"bcb-4966"</span>]
+  }]
+}`)}
+            ${callout("warn","fa-bell","Gotcha",
+              "O ADK só expõe rotas A2A para subpastas que contenham <strong>agent.json</strong>. Se você esquecer esse arquivo, o servidor sobe mas nenhuma rota <code class='font-mono'>/a2a/*</code> é criada — e o cliente recebe 404 em <code class='font-mono'>/.well-known/agent-card.json</code>.")}`)}
+
+          ${section("4. Entry point com get_fast_api_app", "fa-server", `
+            ${codeBlock("run_risk_agent.py (trecho essencial)",
+`<span class="tk-k">from</span> google.adk.cli.fast_api <span class="tk-k">import</span> get_fast_api_app
+<span class="tk-k">import</span> uvicorn, os
+
+<span class="tk-c"># Flag obrigatório para LlmAgent usar Vertex AI (senão cai em API Key)</span>
+os.environ.<span class="tk-f">setdefault</span>(<span class="tk-s">"GOOGLE_GENAI_USE_VERTEXAI"</span>, <span class="tk-s">"TRUE"</span>)
+
+app = <span class="tk-f">get_fast_api_app</span>(
+    agents_dir=<span class="tk-s">"."</span>,     <span class="tk-c"># pai que contém risk_agent/</span>
+    web=<span class="tk-k">False</span>,         <span class="tk-c"># sem dev UI</span>
+    a2a=<span class="tk-k">True</span>,          <span class="tk-c"># registra rotas /a2a/risk_agent/*</span>
+    host=<span class="tk-s">"127.0.0.1"</span>,
+    port=<span class="tk-n">8080</span>,
+)
+
+uvicorn.<span class="tk-f">run</span>(app, host=<span class="tk-s">"127.0.0.1"</span>, port=<span class="tk-n">8080</span>)`)}
+            ${callout("ok","fa-check","Validando",
+              "Depois de subir, <code class='font-mono'>curl http://127.0.0.1:8080/a2a/risk_agent/.well-known/agent-card.json</code> deve retornar o JSON. Se retornar 404, checar se <code class='font-mono'>agent.json</code> existe na pasta.")}`)}
+        </div>`;
+      };
+
+      RENDERERS["implementacao/cliente"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Implementação — 3/5", "Construindo o cliente A2A",
+            "No orquestrador LangGraph, um node precisa chamar o Risk Specialist via A2A. O ADK dá isso pronto com <code class='font-mono'>RemoteA2aAgent</code> + <code class='font-mono'>InMemoryRunner</code>.")}
+
+          ${section("1. Resolver o Agent Card", "fa-satellite-dish", `
+            ${codeBlock("src/clients/adk_client.py",
+`<span class="tk-k">from</span> google.adk.agents.remote_a2a_agent <span class="tk-k">import</span> RemoteA2aAgent
+<span class="tk-k">from</span> google.adk.runners <span class="tk-k">import</span> InMemoryRunner
+<span class="tk-k">from</span> functools <span class="tk-k">import</span> lru_cache
+
+<span class="tk-f">@lru_cache</span>(maxsize=<span class="tk-n">1</span>)
+<span class="tk-k">def</span> <span class="tk-f">_get_remote_agent</span>() -> <span class="tk-t">RemoteA2aAgent</span>:
+    settings = <span class="tk-f">get_settings</span>()
+    url = <span class="tk-t">str</span>(settings.adk_risk_agent_card_url)
+    <span class="tk-k">return</span> <span class="tk-t">RemoteA2aAgent</span>(
+        name=<span class="tk-s">"risk_specialist"</span>,
+        description=<span class="tk-s">"Remote risk specialist"</span>,
+        agent_card=url,
+    )`)}
+            <p class="text-sm text-slate-400 mt-3">A classe <code class="font-mono">RemoteA2aAgent</code> encapsula todo o protocolo. Passamos apenas a URL do Agent Card — o resto (discovery, handshake, streaming) é transparente.</p>`)}
+
+          ${section("2. Criar sessão e enviar mensagem", "fa-envelope", `
+            ${codeBlock("Chamada assíncrona",
+`<span class="tk-k">async def</span> <span class="tk-f">_query_risk_agent_async</span>(payload: <span class="tk-t">A2APayload</span>) -> <span class="tk-t">str</span>:
+    runner = <span class="tk-f">_get_runner</span>()
+    session_id = <span class="tk-s">f"session-{uuid.uuid4().hex[:8]}"</span>
+    <span class="tk-k">await</span> runner.session_service.<span class="tk-f">create_session</span>(
+        app_name=APP_NAME_A2A,
+        user_id=USER_ID_A2A,
+        session_id=session_id,
+    )
+
+    <span class="tk-c"># Serializa o Pydantic payload como TextPart JSON</span>
+    message_text = payload.<span class="tk-f">model_dump_json</span>(indent=<span class="tk-n">2</span>)
+    message = types.<span class="tk-t">Content</span>(role=<span class="tk-s">"user"</span>, parts=[types.<span class="tk-t">Part</span>(text=message_text)])
+
+    final_parts = []
+    <span class="tk-k">async for</span> event <span class="tk-k">in</span> runner.<span class="tk-f">run_async</span>(
+        user_id=USER_ID_A2A, session_id=session_id, new_message=message
+    ):
+        <span class="tk-k">if</span> <span class="tk-f">getattr</span>(event, <span class="tk-s">"is_final_response"</span>, <span class="tk-k">None</span>) <span class="tk-k">and</span> event.<span class="tk-f">is_final_response</span>():
+            <span class="tk-k">for</span> part <span class="tk-k">in</span> event.content.parts:
+                <span class="tk-k">if</span> part.text:
+                    final_parts.<span class="tk-f">append</span>(part.text)
+
+    <span class="tk-k">return</span> <span class="tk-s">"\\n"</span>.<span class="tk-f">join</span>(final_parts)`)}
+            ${callout("info","fa-lightbulb","InMemoryRunner por baixo",
+              "O <code class='font-mono'>RemoteA2aAgent</code> parece com um agente local, mas cada <code class='font-mono'>run_async</code> dispara uma chamada HTTP JSON-RPC ao servidor remoto. O Runner do ADK só orquestra o consumo do stream.")}`)}
+
+          ${section("3. Bridge sync↔async para LangGraph", "fa-shuffle", `
+            ${codeBlock("Wrapper síncrono",
+`<span class="tk-k">def</span> <span class="tk-f">query_risk_agent</span>(payload: <span class="tk-t">A2APayload</span>) -> <span class="tk-t">str</span>:
+    <span class="tk-c"># LangGraph nodes são síncronos; asyncio.run cria loop próprio por call</span>
+    <span class="tk-k">return</span> asyncio.<span class="tk-f">run</span>(<span class="tk-f">_query_risk_agent_async</span>(payload))`)}`)}
+        </div>`;
+      };
+
+      RENDERERS["implementacao/projeto-bv"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Implementação — 4/5", "Estudo de caso: projeto Banco BV",
+            "Tudo o que vimos converge aqui. Este é o diagrama final da arquitetura real que você roda com <code class='font-mono'>python run_risk_agent.py</code> + <code class='font-mono'>python main.py</code>.")}
+
+          ${section("Arquitetura de componentes", "fa-sitemap", `
+            <div class="card no-hover rounded-xl p-6">
+              <pre class="text-[11px] leading-relaxed text-slate-300 font-mono">
+<span class="tk-c"># PROCESSO 1 — Orquestrador (porta livre)</span>
+ ┌────────────────────────────────────────────────────────┐
+ │  <span class="tk-t">LangGraph StateGraph</span>                                  │
+ │    ├─ rag_retrieval   (Vertex AI Vector Search)        │
+ │    ├─ evaluator       (Gemini 2.5 Flash)               │
+ │    ├─ risk_agent      ──┐                              │
+ │    ├─ synthesis         │                              │
+ │    └─ summarizer        │                              │
+ │                         │                              │
+ │    checkpointer: SqliteSaver("checkpoints.db")         │
+ └─────────────────────────│──────────────────────────────┘
+                           │ A2A call (JSON-RPC)
+                           ▼
+<span class="tk-c"># PROCESSO 2 — Risk Specialist (porta 8080)</span>
+ ┌────────────────────────────────────────────────────────┐
+ │  <span class="tk-t">FastAPI (uvicorn)</span>                                     │
+ │  Rotas:                                                │
+ │    GET  /a2a/risk_agent/.well-known/agent-card.json   │
+ │    POST /a2a/risk_agent          (JSON-RPC)           │
+ │                                                        │
+ │  <span class="tk-t">A2aAgentExecutor</span>                                      │
+ │    └─ Runner(risk_specialist_bv)                       │
+ │         └─ <span class="tk-t">LlmAgent</span>(model=gemini-2.5-flash)            │
+ │              ├─ tool: search_credit_policies           │
+ │              └─ tool: check_regulatory_thresholds      │
+ └────────────────────────────────────────────────────────┘
+              </pre>
+            </div>`)}
+
+          ${section("O contrato entre os dois processos", "fa-handshake", `
+            ${codeBlock("src/models.py — A2APayload (Pydantic)",
+`<span class="tk-k">class</span> <span class="tk-t">A2APayload</span>(<span class="tk-t">BaseModel</span>):
+    intent: <span class="tk-t">str</span>                    <span class="tk-c"># "assess_credit_risk"</span>
+    question: <span class="tk-t">str</span>                  <span class="tk-c"># pergunta original</span>
+    policy_chunks: <span class="tk-t">list</span>[<span class="tk-t">PolicyChunk</span>] <span class="tk-c"># RAG docs do orquestrador</span>
+    session: <span class="tk-t">SessionMetadata</span>        <span class="tk-c"># trace_id, triage_rationale</span>`)}
+            <p class="text-sm text-slate-400 mt-3">Esse JSON vira o texto de uma <strong>TextPart</strong> dentro de uma <strong>Message</strong> A2A. No servidor, o LlmAgent recebe e seu prompt instrui a parsear o JSON.</p>`)}
+
+          ${section("Arquivos-chave no repo", "fa-folder-open", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead><tr><th>Arquivo</th><th>Papel</th></tr></thead>
+                <tbody>
+                  <tr><td class="font-mono text-blue-300">risk_agent/agent.py</td><td>Define LlmAgent do especialista</td></tr>
+                  <tr><td class="font-mono text-blue-300">risk_agent/tools.py</td><td>FunctionTools (search_credit_policies, check_regulatory_thresholds)</td></tr>
+                  <tr><td class="font-mono text-blue-300">risk_agent/agent.json</td><td>Agent Card estático</td></tr>
+                  <tr><td class="font-mono text-blue-300">risk_agent/__init__.py</td><td>Reexporta root_agent</td></tr>
+                  <tr><td class="font-mono text-blue-300">run_risk_agent.py</td><td>Sobe servidor FastAPI A2A</td></tr>
+                  <tr><td class="font-mono text-blue-300">src/clients/adk_client.py</td><td>Cliente RemoteA2aAgent</td></tr>
+                  <tr><td class="font-mono text-blue-300">src/nodes/risk_agent.py</td><td>Node LangGraph que chama o cliente</td></tr>
+                  <tr><td class="font-mono text-blue-300">src/models.py</td><td>A2APayload (contrato entre processos)</td></tr>
+                  <tr><td class="font-mono text-blue-300">.env</td><td>ADK_RISK_AGENT_CARD_URL, GOOGLE_GENAI_USE_VERTEXAI</td></tr>
+                </tbody>
+              </table>
+            </div>`)}
+        </div>`;
+      };
+
+      RENDERERS["implementacao/trace-real"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Implementação — 5/5", "Trace real ponta-a-ponta",
+            "Captura dos logs reais de uma execução bem-sucedida do pipeline, anotando cada etapa. Este é o Rosetta Stone para debug futuro.")}
+
+          ${section("Timeline observada", "fa-stopwatch", `
+            ${codeBlock("logs reais do repositório",
+`<span class="tk-c"># t=0s ─ usuário digita a pergunta</span>
+<span class="tk-p">Manager></span> Preciso fazer um empréstimo de 50mi para uma companhia com rating B
+
+<span class="tk-c"># t=0s ─ orquestrador carrega grafo e checkpointer</span>
+INFO  src.graph | Compiling orchestrator StateGraph with checkpointer
+INFO  src.graph | Initialising SQLite checkpointer at checkpoints.db
+
+<span class="tk-c"># t=0–15s ─ RAG retrieval no Vertex Vector Search</span>
+INFO  src.nodes.rag_retrieval | node_rag_retrieval | question='...'
+INFO  src.clients.vector_search | Vector Search | retrieved 5 documents
+
+<span class="tk-c"># t=15–21s ─ evaluator decide escalar (Gemini)</span>
+INFO  src.nodes.evaluator | requires_escalation=True rationale=...
+
+<span class="tk-c"># t=21s ─ chamada A2A começa</span>
+INFO  src.clients.adk_client | A2A | intent=assess_credit_risk chunks=5
+INFO  src.clients.adk_client | A2A | loading RemoteA2aAgent from 
+      http://127.0.0.1:8080/a2a/risk_agent/.well-known/agent-card.json
+INFO  a2a.client.card_resolver | Successfully fetched agent card
+INFO  google_adk.google.adk.agents.remote_a2a_agent | 
+      <span class="tk-s">Successfully resolved remote A2A agent: risk_specialist</span>
+
+<span class="tk-c"># t=22s ─ dentro do servidor: nova task</span>
+INFO  a2a.server.tasks.task_manager | Creating new task for event
+      (task_id: 8a462ec5-..., context_id: 34848936-...)
+
+<span class="tk-c"># t=22–30s ─ LLM + tool calls</span>
+INFO  google_adk | Sending out request, model: gemini-2.5-flash
+INFO  risk_agent.tools | tool:search_credit_policies | top_k=5
+INFO  risk_agent.tools | tool:search_credit_policies | returned 5 docs
+INFO  google_adk | Response received from the model.
+INFO  risk_agent.tools | tool:check_regulatory_thresholds | op=financiamento
+INFO  risk_agent.tools | tool:check_regulatory_thresholds | authority=...
+INFO  google_adk | Sending out request (segunda rodada)
+INFO  google_adk | Response received from the model.
+
+<span class="tk-c"># t=~60s ─ resposta chega de volta ao orquestrador</span>
+INFO  src.clients.adk_client | A2A | response received (chars)
+
+<span class="tk-c"># t=60–65s ─ synthesis costura RAG + parecer do especialista</span>
+INFO  src.nodes.synthesis | node_synthesis | docs=5 assessment_chars=...
+INFO  src.nodes.summarizer | (abaixo do threshold, noop)
+
+<span class="tk-c"># t=65s ─ parecer final impresso para o gestor</span>
++------------------------- FINAL RESPONSE -------------------------+
+| ## Classificação de Risco: Alto                                  |
+| ## Recomendação: ENCAMINHAR PARA COMITÊ DE CRÉDITO CENTRAL       |
++------------------------------------------------------------------+`)}`)}
+
+          ${callout("ok","fa-check","Checkpoints de validação",
+            `Para confirmar que A2A funcionou, procure nos logs:<br>
+            1. <code class='font-mono text-blue-300'>Successfully fetched agent card</code><br>
+            2. <code class='font-mono text-blue-300'>Successfully resolved remote A2A agent</code><br>
+            3. <code class='font-mono text-blue-300'>Creating new task for event</code> (no servidor)<br>
+            4. <code class='font-mono text-blue-300'>tool:* | returned</code> (o especialista usou as ferramentas)<br>
+            5. <code class='font-mono text-blue-300'>response received</code> (cliente recebeu)`)}
+        </div>`;
+      };
+
+      // --------- OPS ---------
+      RENDERERS["ops/checklist"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Ops — 1/3", "Checklist para colocar A2A em produção",
+            "Antes de subir para Cloud Run / AKS / GKE, revise estes itens. São cicatrizes de gente que apanhou na frente.")}
+
+          ${section("Infraestrutura", "fa-server", `
+            <div class="grid grid-cols-2 gap-3">
+              ${[
+                "Servidor atrás de API Gateway com rate limiting",
+                "TLS terminado no gateway; mTLS entre gateway e servidor",
+                "Observability: logs estruturados + OpenTelemetry",
+                "Task store persistente (Postgres/Redis), não InMemory",
+                "Timeouts por método no Agent Card metadata",
+                "Liveness e readiness probes distintos (não chame LLM em liveness)",
+                "Auto-scaling por CPU + fila de tasks pendentes",
+                "Circuit breaker no cliente (ex.: tenacity/backoff)",
+              ].map(t => `
+                <div class="flex items-center gap-3 p-3 rounded bg-slate-800/40 border border-slate-700">
+                  <input type="checkbox" class="w-4 h-4 accent-green-500">
+                  <span class="text-sm text-slate-300">${t}</span>
+                </div>`).join("")}
+            </div>`)}
+
+          ${section("Agent Card em produção", "fa-id-card", `
+            <div class="grid grid-cols-2 gap-3">
+              ${[
+                "URL com HTTPS e domínio próprio",
+                "protocolVersion explicitamente setado",
+                "skills com descrições precisas (o LLM cliente decide por elas)",
+                "securitySchemes documentados",
+                "tags alinhadas com taxonomia do banco",
+                "version semver e bumpada em cada release",
+                "defaultInputModes refletindo o que o agente aceita de verdade",
+                "supportsAuthenticatedExtendedCard se houver skills privadas",
+              ].map(t => `
+                <div class="flex items-center gap-3 p-3 rounded bg-slate-800/40 border border-slate-700">
+                  <input type="checkbox" class="w-4 h-4 accent-green-500">
+                  <span class="text-sm text-slate-300">${t}</span>
+                </div>`).join("")}
+            </div>`)}
+        </div>`;
+      };
+
+      RENDERERS["ops/erros-comuns"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Ops — 2/3", "Erros que vivemos neste projeto",
+            "Cada um destes foi um erro REAL que encontramos ao construir o pipeline. Memorize os sintomas.")}
+
+          ${section("1. Agent Card URL placeholder", "fa-bug", `
+            <div class="card rounded-xl p-5" style="border-color:#ef4444">
+              <h4 class="font-bold text-red-400 mb-2"><i class="fas fa-times-circle mr-2"></i>Sintoma</h4>
+              ${codeBlock("", `Failed to resolve remote A2A agent risk_specialist:
+Failed to resolve AgentCard from URL
+https://your-adk-endpoint.run.app/.well-known/agent.json:
+HTTP Error 503: Network communication error
+[SSL: CERTIFICATE_VERIFY_FAILED]`)}
+              <h4 class="font-bold text-green-400 mt-4 mb-2"><i class="fas fa-check-circle mr-2"></i>Correção</h4>
+              <p class="text-sm text-slate-300 mb-2">Atualizar <code class="font-mono text-amber-300">.env</code> para URL real do servidor:</p>
+              ${codeBlock("", `ADK_RISK_AGENT_CARD_URL=http://127.0.0.1:8080/a2a/risk_agent/.well-known/agent-card.json`)}
+            </div>`)}
+
+          ${section("2. well-known path errado (v0.2 vs v0.3)", "fa-bug", `
+            <div class="card rounded-xl p-5" style="border-color:#f59e0b">
+              <h4 class="font-bold text-amber-400 mb-2"><i class="fas fa-triangle-exclamation mr-2"></i>Sintoma</h4>
+              <p class="text-sm text-slate-300 mb-2">Agent Card retorna 404 mesmo com o servidor no ar.</p>
+              <h4 class="font-bold text-green-400 mt-4 mb-2"><i class="fas fa-check-circle mr-2"></i>Correção</h4>
+              <p class="text-sm text-slate-300">Na v0.3 o path é <code class="font-mono">/.well-known/agent-card.json</code> (antes era <code class="font-mono">/.well-known/agent.json</code>). A constante <code class="font-mono">AGENT_CARD_WELL_KNOWN_PATH</code> do pacote <code class="font-mono">a2a</code> sempre reflete o certo.</p>
+            </div>`)}
+
+          ${section("3. API mudou no ADK 1.31 (agent_dir → agents_dir)", "fa-bug", `
+            <div class="card rounded-xl p-5" style="border-color:#f59e0b">
+              <h4 class="font-bold text-amber-400 mb-2"><i class="fas fa-triangle-exclamation mr-2"></i>Sintoma</h4>
+              ${codeBlock("", `TypeError: get_fast_api_app() got an unexpected keyword argument 'agent_dir'`)}
+              <h4 class="font-bold text-green-400 mt-4 mb-2"><i class="fas fa-check-circle mr-2"></i>Correção</h4>
+              <p class="text-sm text-slate-300 mb-2">Usar <code class="font-mono">agents_dir</code> (plural) e passar o <strong>pai</strong> da pasta do agente, além de <code class="font-mono">web=False, a2a=True</code>:</p>
+              ${codeBlock("", `app = get_fast_api_app(
+    agents_dir=".",
+    web=False,
+    a2a=True,
+)`)}</div>`)}
+
+          ${section("4. GOOGLE_GENAI_USE_VERTEXAI ausente", "fa-bug", `
+            <div class="card rounded-xl p-5" style="border-color:#ef4444">
+              <h4 class="font-bold text-red-400 mb-2"><i class="fas fa-times-circle mr-2"></i>Sintoma</h4>
+              ${codeBlock("", `ValueError: No API key was provided. Please pass a valid API key.
+Learn how to create an API key at https://ai.google.dev/gemini-api/docs/api-key`)}
+              <p class="text-sm text-slate-300 mt-2">O LlmAgent tenta Gemini via API Key quando não sabe que deve usar Vertex AI.</p>
+              <h4 class="font-bold text-green-400 mt-4 mb-2"><i class="fas fa-check-circle mr-2"></i>Correção</h4>
+              ${codeBlock("", `# .env
+GOOGLE_GENAI_USE_VERTEXAI=TRUE
+GOOGLE_CLOUD_PROJECT=seu-projeto
+GOOGLE_CLOUD_LOCATION=us-east1`)}</div>`)}
+
+          ${section("5. Timeout muito curto", "fa-bug", `
+            <div class="card rounded-xl p-5" style="border-color:#f59e0b">
+              <h4 class="font-bold text-amber-400 mb-2"><i class="fas fa-triangle-exclamation mr-2"></i>Sintoma</h4>
+              ${codeBlock("", `A2A call timed out after 30s waiting for the risk-agent response.`)}
+              <h4 class="font-bold text-green-400 mt-4 mb-2"><i class="fas fa-check-circle mr-2"></i>Correção</h4>
+              <p class="text-sm text-slate-300">Agentes com tool calls múltiplas levam facilmente 60-120s. Aumentar <code class="font-mono">ADK_RISK_AGENT_TIMEOUT=180</code> no .env.</p>
+            </div>`)}
+
+          ${section("6. _GeneratorContextManager no checkpointer", "fa-bug", `
+            <div class="card rounded-xl p-5" style="border-color:#ef4444">
+              <h4 class="font-bold text-red-400 mb-2"><i class="fas fa-times-circle mr-2"></i>Sintoma</h4>
+              ${codeBlock("", `TypeError: Invalid checkpointer provided.
+Received _GeneratorContextManager.`)}
+              <h4 class="font-bold text-green-400 mt-4 mb-2"><i class="fas fa-check-circle mr-2"></i>Correção</h4>
+              <p class="text-sm text-slate-300 mb-2"><code class="font-mono">SqliteSaver.from_conn_string()</code> é um context manager. Use construtor direto:</p>
+              ${codeBlock("", `conn = sqlite3.connect(db_path, check_same_thread=False)
+saver = SqliteSaver(conn)`)}</div>`)}
+        </div>`;
+      };
+
+      RENDERERS["ops/debug"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Ops — 3/3", "Técnicas de debug",
+            "Receita em 5 passos para isolar onde o A2A quebrou.")}
+
+          ${section("1. Valide o Agent Card", "fa-search", `
+            ${codeBlock("bash",
+`$ curl -s http://127.0.0.1:8080/a2a/risk_agent/.well-known/agent-card.json | jq
+$ curl -s -w "\\nStatus: %{http_code} em %{time_total}s\\n" \\
+       -o /dev/null \\
+       http://127.0.0.1:8080/a2a/risk_agent/.well-known/agent-card.json
+
+<span class="tk-c"># Se 404: agent.json está faltando na pasta do agente</span>
+<span class="tk-c"># Se timeout: firewall/DNS</span>
+<span class="tk-c"># Se 200 + JSON: ✅ descoberta OK</span>`)}`)}
+
+          ${section("2. Faça uma chamada bruta com curl", "fa-terminal", `
+            ${codeBlock("bash",
+`$ curl -X POST http://127.0.0.1:8080/a2a/risk_agent \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "jsonrpc":"2.0","id":"test-1","method":"message/send",
+    "params":{"message":{"role":"user","parts":[{"kind":"text","text":"Oi"}]}}
+  }' | jq`)}
+            <p class="text-sm text-slate-400 mt-3">Se isso funciona mas o cliente não, o problema é no cliente, não no servidor.</p>`)}
+
+          ${section("3. Ligue debug logs", "fa-volume-high", `
+            ${codeBlock("python (antes de importar ADK/A2A)",
+`<span class="tk-k">import</span> logging
+logging.<span class="tk-f">basicConfig</span>(level=logging.DEBUG)
+logging.<span class="tk-f">getLogger</span>(<span class="tk-s">"google_adk"</span>).setLevel(logging.DEBUG)
+logging.<span class="tk-f">getLogger</span>(<span class="tk-s">"a2a"</span>).setLevel(logging.DEBUG)
+logging.<span class="tk-f">getLogger</span>(<span class="tk-s">"httpx"</span>).setLevel(logging.DEBUG)`)}`)}
+
+          ${section("4. Use tasks/get para inspecionar", "fa-magnifying-glass", `
+            <p class="text-slate-300 mb-3">Quando uma task parece travar, pegue o taskId dos logs e consulte:</p>
+            ${codeBlock("bash",
+`$ TASK_ID=8a462ec5-...
+$ curl -X POST http://127.0.0.1:8080/a2a/risk_agent \\
+  -H "Content-Type: application/json" \\
+  -d "{\\"jsonrpc\\":\\"2.0\\",\\"id\\":\\"q\\",\\"method\\":\\"tasks/get\\",\\"params\\":{\\"id\\":\\"$TASK_ID\\"}}" | jq`)}`)}
+
+          ${section("5. Propague o contextId em logs", "fa-fingerprint", `
+            <p class="text-slate-300 mb-3">Em produção, loge sempre taskId e contextId nos handlers do servidor. Você vai agradecer quando o Datadog mostrar 10k eventos.</p>
+            ${codeBlock("Python logging",
+`logger.<span class="tk-f">info</span>(
+    <span class="tk-s">"A2A call complete"</span>,
+    extra={<span class="tk-s">"task_id"</span>: task_id, <span class="tk-s">"context_id"</span>: context_id}
+)`)}`)}
+        </div>`;
+      };
+
+      // --------- COMPARATIVOS ---------
+      RENDERERS["comparativos/mcp"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Comparativo — 1/3", "A2A × MCP em profundidade",
+            "Já vimos que são complementares. Agora o deep dive com critérios técnicos.")}
+
+          ${section("15 dimensões lado a lado", "fa-table", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead><tr><th>Dimensão</th><th class="text-blue-400">A2A</th><th class="text-purple-400">MCP</th></tr></thead>
+                <tbody>
+                  ${[
+                    ["Papel do servidor","Agente autônomo (pensa)","Provedor de recursos (executa)"],
+                    ["Interoperabilidade","Agente ↔ Agente","Agente ↔ Tool/Resource"],
+                    ["Protocolo base","JSON-RPC 2.0 / HTTP","JSON-RPC 2.0 / stdio ou HTTP"],
+                    ["Streaming","SSE canônico via message/stream","Não canônico"],
+                    ["Estado","Task lifecycle (submitted → completed)","Stateless entre requests"],
+                    ["Descoberta","/.well-known/agent-card.json","initialize + list_tools / list_resources"],
+                    ["Versionamento","v0.3.0 (semver)","protocolVersion na initialize"],
+                    ["Autenticação","OAuth2/mTLS/bearer/apiKey","OAuth2 + transport-specific"],
+                    ["Tipos de payload","Message/Part (text, file, data)","CallToolRequest, GetResourceRequest, etc."],
+                    ["Principais métodos","message/send, message/stream, tasks/*","tools/call, resources/read, prompts/get"],
+                    ["Governança","Linux Foundation","Anthropic + comunidade"],
+                    ["SDKs oficiais","Python, TS, Java, Go","Python, TS"],
+                    ["Analogia HTTP","gRPC entre agentes","driver JDBC para agentes"],
+                    ["Caso principal","Delegar cognição para outro agente","Dar ferramentas a um agente"],
+                    ["Pode o servidor chamar outro?","Sim (A2A é dual)","Não (MCP server é passivo)"],
+                  ].map(r => `<tr><td class="text-slate-200 font-semibold">${r[0]}</td><td class="text-slate-300">${r[1]}</td><td class="text-slate-300">${r[2]}</td></tr>`).join("")}
+                </tbody>
+              </table>
+            </div>`)}
+
+          ${section("Dois padrões que convivem no nosso projeto", "fa-layer-group", `
+            ${codeBlock("se evoluíssemos o projeto BV",
+`<span class="tk-c"># hoje — só A2A</span>
+Orquestrador ──A2A──▶ RiskSpecialist
+
+<span class="tk-c"># evolução — A2A + MCP</span>
+Orquestrador ──A2A──▶ RiskSpecialist
+                        │
+                        ├──MCP──▶ <span class="tk-t">SerasaTool</span>       (api externa)
+                        ├──MCP──▶ <span class="tk-t">BCBCircularTool</span> (normativos)
+                        └──MCP──▶ <span class="tk-t">VectorSearchTool</span> (RAG compartilhado)`)}`)}
+        </div>`;
+      };
+
+      RENDERERS["comparativos/langgraph"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Comparativo — 2/3", "A2A × LangGraph subagents",
+            "LangGraph permite subgraphs e chamadas diretas entre nodes. Por que às vezes vale a pena usar A2A em vez de manter tudo num grafo só?")}
+
+          ${section("Subagent LangGraph nativo", "fa-sitemap", `
+            <div class="grid grid-cols-2 gap-4">
+              <div class="card rounded-xl p-5">
+                <h4 class="font-bold text-green-400 mb-2"><i class="fas fa-check mr-2"></i>A favor</h4>
+                <ul class="text-sm text-slate-300 space-y-1">
+                  <li>• Zero rede — tudo no mesmo processo</li>
+                  <li>• State compartilhado, debug trivial</li>
+                  <li>• Latência mínima</li>
+                  <li>• Uma única conta de GCP</li>
+                </ul>
+              </div>
+              <div class="card rounded-xl p-5">
+                <h4 class="font-bold text-red-400 mb-2"><i class="fas fa-xmark mr-2"></i>Contra</h4>
+                <ul class="text-sm text-slate-300 space-y-1">
+                  <li>• Acoplamento de versões</li>
+                  <li>• Um time pode quebrar o grafo do outro</li>
+                  <li>• Deploy conjunto — não isola incidentes</li>
+                  <li>• Fork de framework impossível</li>
+                </ul>
+              </div>
+            </div>`)}
+
+          ${section("A2A entre processos", "fa-network-wired", `
+            <div class="grid grid-cols-2 gap-4">
+              <div class="card rounded-xl p-5">
+                <h4 class="font-bold text-green-400 mb-2"><i class="fas fa-check mr-2"></i>A favor</h4>
+                <ul class="text-sm text-slate-300 space-y-1">
+                  <li>• Equipes deployam independente</li>
+                  <li>• Stack poliglota possível</li>
+                  <li>• Audit trail regulatório natural</li>
+                  <li>• Versões convivem (v1 e v2 no ar simultâneos)</li>
+                </ul>
+              </div>
+              <div class="card rounded-xl p-5">
+                <h4 class="font-bold text-red-400 mb-2"><i class="fas fa-xmark mr-2"></i>Contra</h4>
+                <ul class="text-sm text-slate-300 space-y-1">
+                  <li>• Latência de rede</li>
+                  <li>• Infra adicional (gateway, observability)</li>
+                  <li>• Auth entre processos</li>
+                  <li>• State compartilhado precisa de protocolo</li>
+                </ul>
+              </div>
+            </div>`)}
+
+          ${callout("tip","fa-lightbulb","Heurística prática",
+            "Se o subagente é mantido por outro time, é compliance-sensitive, ou pode ser reusado por outros orquestradores → <strong>A2A</strong>. Se é pura decomposição cognitiva interna → <strong>subgraph</strong>.")}
+        </div>`;
+      };
+
+      RENDERERS["comparativos/openai"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Comparativo — 3/3", "A2A × OpenAI Assistants API",
+            "A Assistants API da OpenAI é um modelo mental próximo mas proprietário. Comparar ajuda a entender o trade-off de padrão aberto.")}
+
+          ${section("Matriz comparativa", "fa-scale-balanced", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead><tr><th>Aspecto</th><th class="text-blue-400">A2A</th><th class="text-green-400">OpenAI Assistants</th></tr></thead>
+                <tbody>
+                  ${[
+                    ["Natureza","Protocolo aberto","API proprietária"],
+                    ["Implementação","Qualquer vendor","Só OpenAI-hosted (ou compat)"],
+                    ["Conceito central","Agent + Task","Assistant + Thread + Run"],
+                    ["Streaming","SSE","SSE"],
+                    ["Tool use","Via framework no lado servidor","Function calling + File search + Code interpreter"],
+                    ["Memória","Task history + contextId","Thread persistente automático"],
+                    ["Multi-modalidade","Parts (text/file/data)","Imagens, áudio (beta)"],
+                    ["Portabilidade","Alta — troca backend sem mudar cliente","Baixa — acoplado a OpenAI"],
+                    ["Observabilidade","Propaga taskId/contextId","Via Traces da OpenAI"],
+                    ["Interop multi-vendor","Sim (design goal)","Não (fica em OpenAI)"],
+                  ].map(r => `<tr><td class="text-slate-200 font-semibold">${r[0]}</td><td class="text-slate-300">${r[1]}</td><td class="text-slate-300">${r[2]}</td></tr>`).join("")}
+                </tbody>
+              </table>
+            </div>`)}
+
+          ${callout("info","fa-lightbulb","Por que para o BV vale A2A",
+            "Setor financeiro regulado não pode ficar refém de um fornecedor. A2A permite multi-cloud (GCP hoje, AWS/Azure amanhã) e multi-modelo (Gemini hoje, Claude amanhã) trocando só o backend — não o contrato.")}
+        </div>`;
+      };
+
+      // --------- REFERENCIAS ---------
+      RENDERERS["referencias"] = function (c) {
+        c.innerHTML = `<div class="p-8 fade-in">
+          ${pageHeader("Apêndice", "Referências e leituras recomendadas",
+            "Tudo o que usei para escrever esta aula, e onde continuar estudando.")}
+
+          ${section("Spec oficial e governança", "fa-book", `
+            <div class="grid grid-cols-2 gap-4">
+              ${[
+                ["Spec v0.3.0","a2a-protocol.org/latest/specification","fa-file-contract"],
+                ["Repositório GitHub","github.com/a2aproject/A2A","fab fa-github"],
+                ["Linux Foundation AI & Data","lfaidata.foundation","fab fa-linux"],
+                ["A2A Discord","discord.gg/a2a","fab fa-discord"],
+              ].map(r => `
+                <a href="https://${r[1]}" target="_blank" class="card rounded-xl p-5 flex items-center gap-4 cursor-pointer">
+                  <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-600/20 text-blue-400"><i class="fas ${r[2]}"></i></div>
+                  <div class="flex-1">
+                    <div class="font-bold text-white">${r[0]}</div>
+                    <div class="text-xs text-slate-400">${r[1]}</div>
+                  </div>
+                  <i class="fas fa-arrow-up-right-from-square text-slate-500"></i>
+                </a>`).join("")}
+            </div>`)}
+
+          ${section("SDKs e bibliotecas", "fa-box", `
+            <div class="card no-hover rounded-xl p-0 overflow-hidden">
+              <table class="spec-table">
+                <thead><tr><th>Pacote</th><th>Linguagem</th><th>Finalidade</th></tr></thead>
+                <tbody>
+                  <tr><td class="font-mono text-blue-300">a2a-sdk</td><td>Python</td><td>Cliente + servidor de referência</td></tr>
+                  <tr><td class="font-mono text-blue-300">@a2a-sdk/core</td><td>TypeScript</td><td>Cliente + servidor em Node/browser</td></tr>
+                  <tr><td class="font-mono text-blue-300">google-adk</td><td>Python</td><td>Wrapper completo incluindo A2A</td></tr>
+                  <tr><td class="font-mono text-blue-300">langgraph (RemoteA2aAgent via ADK)</td><td>Python</td><td>Integração indireta via ADK</td></tr>
+                </tbody>
+              </table>
+            </div>`)}
+
+          ${section("Fonte do conteúdo desta aula", "fa-code-branch", `
+            <div class="card no-hover rounded-xl p-6">
+              <p class="text-slate-300 mb-3">Todos os exemplos reais vieram de arquivos deste repositório:</p>
+              <ul class="text-sm text-slate-400 space-y-1 font-mono">
+                <li>• risk_agent/agent.py</li>
+                <li>• risk_agent/tools.py</li>
+                <li>• risk_agent/agent.json</li>
+                <li>• risk_agent/__init__.py</li>
+                <li>• run_risk_agent.py</li>
+                <li>• src/clients/adk_client.py</li>
+                <li>• src/nodes/risk_agent.py</li>
+                <li>• src/models.py (A2APayload)</li>
+              </ul>
+            </div>`)}
+
+          ${section("Próximos passos de estudo", "fa-forward", `
+            <div class="grid grid-cols-2 gap-4">
+              ${[
+                ["Implementar push notifications","Teste fluxo S→C com webhook em ngrok.","fa-bell"],
+                ["Trocar transport para gRPC","Baixa latência em VPC interna.","fa-bolt"],
+                ["Adicionar segundo agente","Pasta compliance_agent/ paralela, reutilize get_fast_api_app.","fa-plus"],
+                ["Persistência de tasks","Substituir InMemoryTaskStore por Postgres.","fa-database"],
+                ["Instrumentação OTel","Trace distribuído orquestrador → especialista.","fa-chart-line"],
+                ["Dockerizar e publicar em Cloud Run","Domínio público + HTTPS + IAM.","fab fa-docker"],
+              ].map(r => `
+                <div class="card rounded-xl p-4 flex gap-3 items-start">
+                  <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-green-600/20 text-green-400 flex-shrink-0"><i class="fas ${r[2]}"></i></div>
+                  <div>
+                    <h4 class="font-bold text-white text-sm">${r[0]}</h4>
+                    <p class="text-xs text-slate-400">${r[1]}</p>
+                  </div>
+                </div>`).join("")}
+            </div>`)}
+
+          <div class="mt-10 text-center text-slate-600 text-xs">
+            <i class="fas fa-heart text-red-500"></i> Aula construída a partir da implementação real do orquestrador LangGraph + Risk Specialist deste repositório.
+          </div>
+        </div>`;
+      };
+
+      // ==================== BOOT ====================
+      buildNav();
+      router("dashboard");
+    </script>
+  </body>
+</html>
