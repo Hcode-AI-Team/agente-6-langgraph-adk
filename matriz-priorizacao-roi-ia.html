@@ -1,0 +1,1905 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Priorização e Valor em Projetos de IA | Workshop Executivo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #0f172a;
+        color: #e2e8f0;
+      }
+      .font-mono {
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1e293b;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #475569;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+      }
+
+      .nav-item {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+      }
+      .nav-item:hover {
+        background: rgba(59, 130, 246, 0.1);
+      }
+      .nav-item.active {
+        border-left-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+      }
+
+      .submenu {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+      }
+      .submenu.open {
+        max-height: 600px;
+      }
+      .submenu-item {
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem 0.5rem 3rem;
+      }
+
+      .card {
+        background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+        border: 1px solid #334155;
+        transition: all 0.3s ease;
+      }
+      .card:hover {
+        border-color: #3b82f6;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px -10px rgba(59, 130, 246, 0.3);
+      }
+
+      .code-block {
+        background: #0c0f14;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      .fade-in {
+        animation: fadeIn 0.4s ease-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Interactive: Scoring Calculator */
+      .calc-row input[type="range"] {
+        width: 100%;
+        accent-color: #3b82f6;
+      }
+      .verdict.go {
+        background: #16a34a;
+        color: #fff;
+      }
+      .verdict.piloto {
+        background: #d97706;
+        color: #fff;
+      }
+      .verdict.nogo {
+        background: #dc2626;
+        color: #fff;
+      }
+
+      /* Rubric table */
+      .rubric th,
+      .rubric td {
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 1px solid #334155;
+        vertical-align: top;
+      }
+      .rubric th {
+        background: #1e293b;
+        color: #60a5fa;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .rubric td:first-child {
+        font-weight: 700;
+        color: #fff;
+        width: 180px;
+      }
+      .rubric .score-col {
+        width: 70px;
+        text-align: center;
+        font-weight: 700;
+        color: #60a5fa;
+      }
+
+      /* Tree / decision flow */
+      .pill.buy {
+        background: #16a34a;
+      }
+      .pill.rag {
+        background: #3b82f6;
+      }
+      .pill.build {
+        background: #7c3aed;
+      }
+    </style>
+  </head>
+  <body class="flex flex-col h-screen overflow-hidden">
+    <!-- Header Navbar -->
+    <header
+      class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center justify-between z-30"
+    >
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center"
+          >
+            <i class="fas fa-chart-line text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-white">
+              Priorização & ROI em IA
+            </h1>
+            <p
+              class="text-[10px] text-slate-500 font-semibold uppercase tracking-widest"
+            >
+              Workshop Executivo · 60-90 min
+            </p>
+          </div>
+        </div>
+      </div>
+      <nav class="flex gap-3">
+        <button
+          onclick="window.print()"
+          class="px-4 py-2 bg-slate-700/40 text-slate-300 hover:bg-slate-700/60 rounded-lg text-sm font-semibold transition-all"
+        >
+          <i class="fas fa-print mr-2"></i>Imprimir
+        </button>
+        <button
+          onclick="router('lab/ficha')"
+          class="px-4 py-2 bg-green-600/20 text-green-400 hover:bg-green-600/30 rounded-lg text-sm font-semibold transition-all"
+        >
+          <i class="fas fa-clipboard-check mr-2"></i>Ficha de Avaliação
+        </button>
+      </nav>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+      <!-- Sidebar -->
+      <aside
+        class="w-72 bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0 overflow-y-auto"
+      >
+        <!-- Workshop Info -->
+        <div
+          class="p-4 mx-4 mt-4 bg-blue-600/10 border border-blue-600/30 rounded-xl"
+        >
+          <div
+            class="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1"
+          >
+            Workshop Executivo
+          </div>
+          <div class="text-sm font-bold text-white leading-tight">
+            Priorização e Valor em Projetos de IA
+          </div>
+          <div class="text-xs text-slate-400 mt-2">
+            <i class="fas fa-clock mr-1"></i> 60-90 min · Hands-on
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 py-4">
+          <div class="px-4 mb-2">
+            <span
+              class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+              >Navegação</span
+            >
+          </div>
+          <ul class="space-y-1 px-2">
+            <li>
+              <button
+                onclick="router('dashboard')"
+                id="nav-dashboard"
+                class="nav-item active w-full text-left px-4 py-3 rounded-lg text-sm font-medium"
+              >
+                <i class="fas fa-home w-6 text-slate-400"></i> Visão Geral
+              </button>
+            </li>
+
+            <!-- Contexto -->
+            <li>
+              <button
+                onclick="toggleSubmenu('contexto')"
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-sm font-medium flex items-center justify-between"
+              >
+                <span
+                  ><i class="fas fa-exclamation-circle w-6 text-slate-400"></i>
+                  Contexto</span
+                >
+                <i
+                  class="fas fa-chevron-down text-slate-500 transition-transform"
+                  id="icon-contexto"
+                ></i>
+              </button>
+              <ul class="submenu" id="submenu-contexto">
+                <li>
+                  <button
+                    onclick="router('contexto/problema')"
+                    class="submenu-item nav-item w-full text-left text-slate-400 hover:text-white"
+                  >
+                    O Problema Real
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onclick="router('contexto/custos')"
+                    class="submenu-item nav-item w-full text-left text-slate-400 hover:text-white"
+                  >
+                    Custo da Não-Priorização
+                  </button>
+                </li>
+              </ul>
+            </li>
+
+            <!-- Metodologia -->
+            <li>
+              <button
+                onclick="toggleSubmenu('metodologia')"
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-sm font-medium flex items-center justify-between"
+              >
+                <span
+                  ><i class="fas fa-sitemap w-6 text-slate-400"></i>
+                  Metodologia</span
+                >
+                <i
+                  class="fas fa-chevron-down text-slate-500 transition-transform"
+                  id="icon-metodologia"
+                ></i>
+              </button>
+              <ul class="submenu" id="submenu-metodologia">
+                <li>
+                  <button
+                    onclick="router('metodologia/taxonomia')"
+                    class="submenu-item nav-item w-full text-left text-slate-400 hover:text-white"
+                  >
+                    Taxonomia de Soluções
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onclick="router('metodologia/rubrica')"
+                    class="submenu-item nav-item w-full text-left text-slate-400 hover:text-white"
+                  >
+                    Rubrica de Scoring
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onclick="router('metodologia/matriz')"
+                    class="submenu-item nav-item w-full text-left text-slate-400 hover:text-white"
+                  >
+                    Matriz & Nota de Corte
+                  </button>
+                </li>
+              </ul>
+            </li>
+
+            <!-- Valor e ROI -->
+            <li>
+              <button
+                onclick="toggleSubmenu('valor')"
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-sm font-medium flex items-center justify-between"
+              >
+                <span
+                  ><i class="fas fa-dollar-sign w-6 text-slate-400"></i> Valor &
+                  ROI</span
+                >
+                <i
+                  class="fas fa-chevron-down text-slate-500 transition-transform"
+                  id="icon-valor"
+                ></i>
+              </button>
+              <ul class="submenu" id="submenu-valor">
+                <li>
+                  <button
+                    onclick="router('valor/roi')"
+                    class="submenu-item nav-item w-full text-left text-slate-400 hover:text-white"
+                  >
+                    Além da Fórmula Simples
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onclick="router('valor/caso')"
+                    class="submenu-item nav-item w-full text-left text-slate-400 hover:text-white"
+                  >
+                    Caso: Triagem RH
+                  </button>
+                </li>
+              </ul>
+            </li>
+
+            <!-- Governança -->
+            <li>
+              <button
+                onclick="toggleSubmenu('governanca')"
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-sm font-medium flex items-center justify-between"
+              >
+                <span
+                  ><i class="fas fa-shield-halved w-6 text-slate-400"></i>
+                  Governança</span
+                >
+                <i
+                  class="fas fa-chevron-down text-slate-500 transition-transform"
+                  id="icon-governanca"
+                ></i>
+              </button>
+              <ul class="submenu" id="submenu-governanca">
+                <li>
+                  <button
+                    onclick="router('governanca/gonogo')"
+                    class="submenu-item nav-item w-full text-left text-slate-400 hover:text-white"
+                  >
+                    Go &amp; No-Go
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onclick="router('governanca/risco')"
+                    class="submenu-item nav-item w-full text-left text-slate-400 hover:text-white"
+                  >
+                    Risco Regulatório
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onclick="router('governanca/makebuild')"
+                    class="submenu-item nav-item w-full text-left text-slate-400 hover:text-white"
+                  >
+                    Make vs. Buy vs. RAG
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onclick="router('governanca/portfolio')"
+                    class="submenu-item nav-item w-full text-left text-slate-400 hover:text-white"
+                  >
+                    Portfólio &amp; Adoção
+                  </button>
+                </li>
+              </ul>
+            </li>
+
+            <!-- Laboratórios -->
+            <li class="mt-2">
+              <div class="px-4 mb-2">
+                <span
+                  class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+                  >Hands-on</span
+                >
+              </div>
+            </li>
+            <li>
+              <button
+                onclick="router('lab/scoring')"
+                id="nav-lab-scoring"
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2"
+              >
+                <i class="fas fa-sliders w-6 text-amber-400"></i>
+                <span>Lab 1: Scoring Calculator</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onclick="router('lab/roi')"
+                id="nav-lab-roi"
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2"
+              >
+                <i class="fas fa-calculator w-6 text-amber-400"></i>
+                <span>Lab 2: ROI Simulator</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onclick="router('lab/ficha')"
+                id="nav-lab-ficha"
+                class="nav-item w-full text-left px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2"
+              >
+                <i class="fas fa-clipboard-check w-6 text-green-400"></i>
+                <span>Ficha de Avaliação</span>
+              </button>
+            </li>
+          </ul>
+        </nav>
+
+        <!-- Rodapé -->
+        <div class="p-4 border-t border-slate-800">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold"
+            >
+              <i class="fas fa-chalkboard-user"></i>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-white">Workshop Executivo</p>
+              <p class="text-[10px] text-green-400">
+                <i class="fas fa-circle text-[6px] mr-1"></i> Filtro
+                colaborativo
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 overflow-y-auto bg-slate-950" id="main-content">
+        <!-- Content injected by JS -->
+      </main>
+    </div>
+
+    <script>
+      // ==================== STATE ====================
+      let currentRoute = "dashboard";
+      let openSubmenus = [];
+
+      // ==================== NAVIGATION ====================
+      function router(route) {
+        currentRoute = route;
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((el) => el.classList.remove("active"));
+
+        // Activar item atual (top-level ou submenu)
+        const routeId = "nav-" + route.replace("/", "-");
+        const activeEl = document.getElementById(routeId);
+        if (activeEl) activeEl.classList.add("active");
+
+        // Abrir submenu pai se aplicável
+        const [section] = route.split("/");
+        const parentSubmenu = document.getElementById(`submenu-${section}`);
+        if (parentSubmenu && !parentSubmenu.classList.contains("open")) {
+          toggleSubmenu(section);
+        }
+
+        const main = document.getElementById("main-content");
+        main.innerHTML = "";
+        main.scrollTop = 0;
+
+        const [sec, sub] = route.split("/");
+
+        switch (sec) {
+          case "dashboard":
+            renderDashboard(main);
+            break;
+          case "contexto":
+            renderContexto(main, sub);
+            break;
+          case "metodologia":
+            renderMetodologia(main, sub);
+            break;
+          case "valor":
+            renderValor(main, sub);
+            break;
+          case "governanca":
+            renderGovernanca(main, sub);
+            break;
+          case "lab":
+            renderLab(main, sub);
+            break;
+          default:
+            renderDashboard(main);
+        }
+      }
+
+      function toggleSubmenu(name) {
+        const submenu = document.getElementById(`submenu-${name}`);
+        const icon = document.getElementById(`icon-${name}`);
+        if (!submenu) return;
+
+        if (submenu.classList.contains("open")) {
+          submenu.classList.remove("open");
+          if (icon) icon.style.transform = "rotate(0deg)";
+          openSubmenus = openSubmenus.filter((s) => s !== name);
+        } else {
+          submenu.classList.add("open");
+          if (icon) icon.style.transform = "rotate(180deg)";
+          openSubmenus.push(name);
+        }
+      }
+
+      // ==================== RENDERERS ====================
+      function renderDashboard(container) {
+        container.innerHTML = `
+          <div class="p-8 fade-in">
+            <div class="mb-8">
+              <div class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+                <i class="fas fa-calendar-day mr-2"></i> Workshop Executivo · 60-90 min
+              </div>
+              <h1 class="text-4xl font-black text-white mb-3">Priorização e Valor em Projetos de IA</h1>
+              <p class="text-slate-400 text-lg max-w-3xl">
+                Ao final deste workshop, cada participante terá pontuado uma ideia real do backlog, estimado seu ROI e decidido seu destino: aprovar, pilotar ou descartar.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-4 gap-4 mb-8">
+              ${[
+                { label: "Duração", value: "60-90 min" },
+                { label: "Formato", value: "Hands-on" },
+                { label: "Blocos", value: "6" },
+                { label: "Exercícios", value: "2 + Ficha" },
+              ]
+                .map(
+                  (stat) => `
+                <div class="card rounded-xl p-5">
+                  <div class="text-slate-500 text-xs font-bold uppercase mb-1">${stat.label}</div>
+                  <div class="text-2xl font-black text-white">${stat.value}</div>
+                </div>
+              `,
+                )
+                .join("")}
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 mb-8">
+              <div class="card rounded-xl p-6 border-l-4 border-l-red-500">
+                <div class="flex items-center gap-2 mb-3">
+                  <i class="fas fa-exclamation-triangle text-red-500"></i>
+                  <span class="text-xs font-bold text-red-400 uppercase tracking-widest">Problema</span>
+                </div>
+                <p class="text-slate-300 text-sm leading-relaxed">
+                  Ter ideias demais sem critério de priorização leva a <strong class="text-white">dispersão de squad</strong>, <strong class="text-white">pilotos eternos</strong> e <strong class="text-white">ROI nulo</strong>. Cerca de 80% dos projetos de IA não entregam o retorno previsto.
+                </p>
+              </div>
+              <div class="card rounded-xl p-6 border-l-4 border-l-green-500">
+                <div class="flex items-center gap-2 mb-3">
+                  <i class="fas fa-check-circle text-green-500"></i>
+                  <span class="text-xs font-bold text-green-400 uppercase tracking-widest">Solução</span>
+                </div>
+                <p class="text-slate-300 text-sm leading-relaxed">
+                  Rubrica objetiva, matriz de scoring, simulador de ROI completo (TCO + payback + cost of delay) e ficha de submissão ao comitê. <strong class="text-white">Metodologia replicável</strong>.
+                </p>
+              </div>
+            </div>
+
+            <div class="card rounded-xl p-6 mb-8">
+              <h3 class="text-lg font-bold text-white mb-6"><i class="fas fa-bullseye mr-2 text-blue-400"></i> Objetivos Mensuráveis</h3>
+              <div class="grid grid-cols-2 gap-4">
+                ${[
+                  {
+                    icon: "times-circle",
+                    color: "red",
+                    text: "Saber quando <strong>não</strong> usar IA",
+                  },
+                  {
+                    icon: "stopwatch",
+                    color: "blue",
+                    text: "Pontuar qualquer ideia em menos de 5 min",
+                  },
+                  {
+                    icon: "coins",
+                    color: "amber",
+                    text: "Estimar ROI com TCO realista (3 anos)",
+                  },
+                  {
+                    icon: "clipboard-check",
+                    color: "green",
+                    text: "Sair com uma ficha preenchida pronta para o comitê",
+                  },
+                ]
+                  .map(
+                    (obj) => `
+                  <div class="flex items-start gap-3 p-4 bg-slate-800/40 rounded-lg">
+                    <i class="fas fa-${obj.icon} text-${obj.color}-400 text-lg mt-0.5"></i>
+                    <p class="text-sm text-slate-300">${obj.text}</p>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+            </div>
+
+            <div class="card rounded-xl p-6">
+              <h3 class="text-lg font-bold text-white mb-6"><i class="fas fa-route mr-2 text-blue-400"></i> Roteiro do Workshop</h3>
+              <div class="relative">
+                <div class="absolute left-[5px] top-0 bottom-0 w-0.5 bg-slate-700"></div>
+                <div class="space-y-4">
+                  ${[
+                    {
+                      block: "Bloco 1",
+                      title: "Contexto: por que priorizar",
+                      duration: "10 min",
+                      route: "contexto/problema",
+                    },
+                    {
+                      block: "Bloco 2",
+                      title: "Metodologia: taxonomia, rubrica e matriz",
+                      duration: "15 min",
+                      route: "metodologia/taxonomia",
+                    },
+                    {
+                      block: "Bloco 3",
+                      title: "Lab 1: Pontuar uma ideia (scoring)",
+                      duration: "10 min",
+                      route: "lab/scoring",
+                      highlight: true,
+                    },
+                    {
+                      block: "Bloco 4",
+                      title: "Valor: ROI, payback e caso prático",
+                      duration: "10 min",
+                      route: "valor/roi",
+                    },
+                    {
+                      block: "Bloco 5",
+                      title: "Lab 2: Simular ROI da sua ideia",
+                      duration: "10 min",
+                      route: "lab/roi",
+                      highlight: true,
+                    },
+                    {
+                      block: "Bloco 6",
+                      title: "Governança + ficha preenchida",
+                      duration: "15 min",
+                      route: "governanca/gonogo",
+                    },
+                  ]
+                    .map(
+                      (item) => `
+                    <div class="flex gap-4 relative cursor-pointer group" onclick="router('${item.route}')">
+                      <div class="w-3 h-3 rounded-full ${item.highlight ? "bg-amber-500" : "bg-blue-500"} mt-1.5 z-10"></div>
+                      <div class="flex-1 pb-4 group-hover:bg-slate-800/40 rounded-lg px-3 -ml-3 py-1 transition-colors">
+                        <div class="flex items-center gap-3 flex-wrap">
+                          <span class="text-xs font-mono ${item.highlight ? "text-amber-400" : "text-blue-400"}">${item.block}</span>
+                          <span class="text-white font-semibold">${item.title}</span>
+                          <span class="text-xs text-slate-500">${item.duration}</span>
+                          <i class="fas fa-arrow-right text-xs text-slate-600 group-hover:text-blue-400 transition-colors"></i>
+                        </div>
+                      </div>
+                    </div>
+                  `,
+                    )
+                    .join("")}
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6 card rounded-xl p-6 border-l-4 border-l-blue-500">
+              <h3 class="text-lg font-bold text-blue-400 mb-3"><i class="fas fa-quote-left mr-2"></i> Tese do Workshop</h3>
+              <p class="text-xl text-slate-200 leading-relaxed">
+                Priorizar <strong class="text-white">não é escolher as melhores ideias</strong>. É dizer "não" a boas ideias para que as <strong class="text-white">extraordinárias</strong> possam receber squad, dados e sponsorship suficientes para terminar.
+              </p>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderContexto(container, sub) {
+        if (!sub || sub === "problema") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-exclamation-circle mr-2"></i> Contexto
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">O problema real</h1>
+                <p class="text-slate-400 text-lg">Temos ideias demais. E a estatística global não é gentil com quem não prioriza.</p>
+              </div>
+
+              <div class="grid grid-cols-3 gap-6 mb-8">
+                ${[
+                  {
+                    num: "~80%",
+                    label: "Projetos de IA que falham",
+                    desc: "Média de mercado (Gartner, 2024): não chegam a produção ou não entregam o ROI previsto.",
+                    color: "amber",
+                  },
+                  {
+                    num: "3-7×",
+                    label: "Custo real vs. estimado",
+                    desc: "Projetos sem rubrica estouram estimativa por subestimar dados, adoção e reentreino.",
+                    color: "red",
+                  },
+                ]
+                  .map(
+                    (stat) => `
+                  <div class="card rounded-xl p-6 border-t-4 border-t-${stat.color}-500">
+                    <div class="text-5xl font-black text-${stat.color}-400 mb-3">${stat.num}</div>
+                    <h3 class="text-lg font-bold text-white mb-2">${stat.label}</h3>
+                    <p class="text-sm text-slate-400">${stat.desc}</p>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+
+              <div class="card rounded-xl p-6 border-l-4 border-l-green-500">
+                <h3 class="text-sm font-bold text-green-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-lightbulb mr-2"></i> Tese do workshop
+                </h3>
+                <p class="text-lg text-slate-200 leading-relaxed">
+                  Priorizar não é escolher as melhores ideias. É dizer "não" a boas ideias para que as <strong class="text-white">extraordinárias</strong> possam receber squad, dados e sponsorship suficientes para terminar.
+                </p>
+              </div>
+
+              <div class="mt-6 p-6 bg-blue-900/20 border-l-4 border-blue-500 rounded-xl">
+                <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-2">
+                  <i class="fas fa-info-circle mr-2"></i>Perguntas que abrem o debate
+                </h3>
+                <ul class="space-y-2 text-sm text-slate-300 mt-3">
+                  <li><i class="fas fa-angle-right mr-2 text-blue-400"></i>Quantos PoCs rodaram no último ciclo e quantos foram para produção?</li>
+                  <li><i class="fas fa-angle-right mr-2 text-blue-400"></i>Se a razão for pior que 1 em 5, temos um problema de priorização — não de tecnologia.</li>
+                </ul>
+              </div>
+            </div>
+          `;
+        } else if (sub === "custos") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-red-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-fire mr-2"></i> Por que dói não priorizar
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">As três armadilhas do portfólio indisciplinado</h1>
+                <p class="text-slate-400 text-lg">Padrões recorrentes que matam valor sem que ninguém perceba.</p>
+              </div>
+
+              <div class="grid grid-cols-3 gap-6 mb-8">
+                ${[
+                  {
+                    title: "Dispersão de squad",
+                    icon: "users-slash",
+                    desc: "Time rodando 8 PoCs com 12% de dedicação cada. Nenhum chega a 60% de prontidão. Resultado: zero valor entregue, 100% do custo consumido.",
+                  },
+                  {
+                    title: "Piloto eterno",
+                    icon: "hourglass-half",
+                    desc: "Projeto que 'quase vai escalar' há 18 meses. Custo afundado vira argumento político para não matar — exatamente o viés que priorização evita.",
+                  },
+                  {
+                    title: "Canibalização de dados",
+                    icon: "database",
+                    desc: "Três iniciativas disputando a mesma base sem governança. A primeira que chega bloqueia as outras. A política decide, não o valor.",
+                  },
+                ]
+                  .map(
+                    (trap) => `
+                  <div class="card rounded-xl p-6 border-l-4 border-l-red-500">
+                    <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mb-4">
+                      <i class="fas fa-${trap.icon} text-red-400 text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">${trap.title}</h3>
+                    <p class="text-sm text-slate-400">${trap.desc}</p>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+
+              <div class="card rounded-xl p-6 border-l-4 border-l-amber-500">
+                <h3 class="text-sm font-bold text-amber-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-ruler mr-2"></i> Regra prática
+                </h3>
+                <p class="text-lg text-slate-200 leading-relaxed">
+                  Se o squad de IA tem <strong class="text-white">N pessoas</strong>, o portfólio ativo <strong class="text-white">nunca deve passar de N÷3 projetos</strong> em execução simultânea.
+                  O resto fica em <em>backlog priorizado</em>, não em "andamento".
+                </p>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      function renderMetodologia(container, sub) {
+        if (!sub || sub === "taxonomia") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-layer-group mr-2"></i> Categorização
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">Nem tudo que parece IA precisa ser IA</h1>
+                <p class="text-slate-400 text-lg">Quatro níveis com custo e maturidade crescentes. Escolher errado = pagar caro por valor baixo.</p>
+              </div>
+
+              <div class="grid grid-cols-4 gap-4 mb-8">
+                ${[
+                  {
+                    lvl: "Nível 1",
+                    title: "Automação",
+                    color: "slate",
+                    icon: "cog",
+                    what: "Regras fixas, fluxos.",
+                    ex: "Alerta de estoque, Fluig.",
+                    cost: "Baixo",
+                    data: "Não exige",
+                  },
+                  {
+                    lvl: "Nível 2",
+                    title: "IA Aplicada",
+                    color: "blue",
+                    icon: "brain",
+                    what: "Classificação, OCR.",
+                    ex: "Triagem de documentos.",
+                    cost: "Médio",
+                    data: "Rotulados",
+                  },
+                  {
+                    lvl: "Nível 3",
+                    title: "GenAI + RAG",
+                    color: "purple",
+                    icon: "comments",
+                    what: "Busca e síntese.",
+                    ex: "Assistente técnico, busca de desenhos.",
+                    cost: "Médio-alto (API)",
+                    data: "Base textual",
+                  },
+                  {
+                    lvl: "Nível 4",
+                    title: "Preditivos",
+                    color: "red",
+                    icon: "chart-line",
+                    what: "Previsão, otimização.",
+                    ex: "Falha de ativo, demanda de vapor.",
+                    cost: "Alto",
+                    data: "Históricos extensos",
+                  },
+                ]
+                  .map(
+                    (n) => `
+                  <div class="card rounded-xl p-5 border-t-4 border-t-${n.color}-500">
+                    <div class="flex items-center gap-2 mb-3">
+                      <span class="px-2 py-1 bg-${n.color}-500/20 text-${n.color}-400 text-[10px] font-bold rounded uppercase">${n.lvl}</span>
+                    </div>
+                    <div class="w-10 h-10 bg-${n.color}-500/20 rounded-lg flex items-center justify-center mb-3">
+                      <i class="fas fa-${n.icon} text-${n.color}-400"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">${n.title}</h3>
+                    <div class="text-xs text-slate-400 space-y-2">
+                      <p><strong class="text-slate-300">O quê:</strong> ${n.what}</p>
+                      <p><strong class="text-slate-300">Ex.:</strong> ${n.ex}</p>
+                      <p><strong class="text-slate-300">Custo:</strong> ${n.cost}</p>
+                      <p><strong class="text-slate-300">Dados:</strong> ${n.data}</p>
+                    </div>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+
+              <div class="card rounded-xl p-6 border-l-4 border-l-blue-500">
+                <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-lightbulb mr-2"></i> Dica para o facilitador
+                </h3>
+                <p class="text-sm text-slate-300">
+                  Pergunte ao grupo onde cada ideia-âncora do backlog se encaixa. Muitas "IAs" do backlog são, na verdade, <strong class="text-white">Nível 1</strong> — e isso é ótima notícia, porque entregam em 30 dias.
+                </p>
+              </div>
+            </div>
+          `;
+        } else if (sub === "rubrica") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-ruler-combined mr-2"></i> Como pontuar
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">Rubrica de avaliação (1 a 5)</h1>
+                <p class="text-slate-400 text-lg">Sem rubrica, scoring vira opinião. Cada critério tem âncoras objetivas.</p>
+              </div>
+
+              <div class="card rounded-xl p-0 overflow-hidden">
+                <table class="rubric w-full text-sm">
+                  <thead>
+                    <tr>
+                      <th>Critério</th>
+                      <th>Nota 1</th>
+                      <th>Nota 3</th>
+                      <th>Nota 5</th>
+                      <th class="score-col">Peso</th>
+                    </tr>
+                  </thead>
+                  <tbody class="text-slate-300">
+                    <tr>
+                      <td>Impacto Financeiro</td>
+                      <td>&lt; R$ 50 mil/ano</td>
+                      <td>R$ 200-500 mil/ano</td>
+                      <td>&gt; R$ 1 mi/ano ou receita nova</td>
+                      <td class="score-col">×3</td>
+                    </tr>
+                    <tr>
+                      <td>Ganho Operacional</td>
+                      <td>Melhora marginal</td>
+                      <td>Reduz 30-50% do tempo</td>
+                      <td>Elimina a tarefa ou remove gargalo crítico</td>
+                      <td class="score-col">×2</td>
+                    </tr>
+                    <tr>
+                      <td>Facilidade Técnica</td>
+                      <td>Requer R&amp;D, modelo próprio</td>
+                      <td>Exige integração média</td>
+                      <td>SaaS pronto ou API direta</td>
+                      <td class="score-col">×2</td>
+                    </tr>
+                    <tr>
+                      <td>Prontidão de Dados</td>
+                      <td>Dados não existem</td>
+                      <td>Existem, mas precisam de limpeza</td>
+                      <td>Limpos, rotulados, acessíveis</td>
+                      <td class="score-col">×2</td>
+                    </tr>
+                    <tr>
+                      <td>Risco (inverso)</td>
+                      <td>Regulatório, reputacional alto</td>
+                      <td>Risco controlável</td>
+                      <td>Baixo risco, escopo interno</td>
+                      <td class="score-col">×1</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mt-6 card rounded-xl p-6 border-l-4 border-l-amber-500">
+                <h3 class="text-sm font-bold text-amber-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-exclamation-triangle mr-2"></i> Atenção
+                </h3>
+                <p class="text-sm text-slate-300">
+                  O critério <strong class="text-white">Risco é invertido</strong>: nota 5 representa risco baixo. Isso garante que <strong class="text-white">maior pontuação total sempre significa melhor projeto</strong>.
+                </p>
+              </div>
+
+              <div class="mt-6 flex gap-4">
+                <button onclick="router('metodologia/matriz')" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all">
+                  <i class="fas fa-arrow-right mr-2"></i>Ver fórmula e nota de corte
+                </button>
+                <button onclick="router('lab/scoring')" class="px-5 py-3 bg-amber-600/20 border border-amber-600 text-amber-400 hover:bg-amber-600/30 rounded-lg text-sm font-semibold transition-all">
+                  <i class="fas fa-sliders mr-2"></i>Abrir Scoring Calculator
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (sub === "matriz") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-square-root-alt mr-2"></i> Metodologia
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">Fórmula e nota de corte</h1>
+                <p class="text-slate-400 text-lg">A equação que transforma 5 notas em um veredito reproduzível.</p>
+              </div>
+
+              <div class="card rounded-xl p-8 mb-8 border border-blue-600/40 bg-gradient-to-br from-slate-900 to-blue-950/40">
+                <div class="text-center">
+                  <div class="text-[11px] text-blue-400 font-bold uppercase tracking-widest mb-4">Fórmula</div>
+                  <div class="font-mono text-xl md:text-2xl text-white leading-relaxed">
+                    Score = (Impacto × 3) + (Eficiência × 2) + (Viabilidade × 2) + (Dados × 2) + (Risco × 1)
+                  </div>
+                  <p class="mt-6 text-sm text-slate-400">Mínimo teórico: <strong class="text-white">10</strong> · Máximo teórico: <strong class="text-white">50</strong></p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-6 mb-8">
+                <div class="card rounded-xl p-6 border-t-4 border-t-green-500">
+                  <div class="flex items-center gap-3 mb-3">
+                    <i class="fas fa-check-circle text-green-400 text-2xl"></i>
+                    <h3 class="text-xl font-bold text-green-400">≥ 35 · Aprovar</h3>
+                  </div>
+                  <p class="text-sm text-slate-300">Entra no portfólio ativo. Sponsor, squad e prazo definidos em até <strong class="text-white">15 dias</strong>.</p>
+                </div>
+                <div class="card rounded-xl p-6 border-t-4 border-t-amber-500">
+                  <div class="flex items-center gap-3 mb-3">
+                    <i class="fas fa-flask text-amber-400 text-2xl"></i>
+                    <h3 class="text-xl font-bold text-amber-400">25-34 · Piloto</h3>
+                  </div>
+                  <p class="text-sm text-slate-300">PoC de <strong class="text-white">30-60 dias</strong> com critério de saída claro. Vira aprovado ou volta ao backlog.</p>
+                </div>
+                <div class="card rounded-xl p-6 border-t-4 border-t-red-500">
+                  <div class="flex items-center gap-3 mb-3">
+                    <i class="fas fa-times-circle text-red-400 text-2xl"></i>
+                    <h3 class="text-xl font-bold text-red-400">&lt; 25 · Reprovar</h3>
+                  </div>
+                  <p class="text-sm text-slate-300">Volta ao backlog com feedback estruturado. Pode retornar quando dados, sponsor ou maturidade mudarem.</p>
+                </div>
+              </div>
+
+              <div class="card rounded-xl p-6 border-l-4 border-l-blue-500">
+                <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-cog mr-2"></i> Calibragem
+                </h3>
+                <p class="text-sm text-slate-300">
+                  Os thresholds (<strong class="text-white">35/25</strong>) são calibráveis. Para organizações novas em IA, comece com <strong class="text-white">30/20</strong> para não matar tudo. Reavalie a cada trimestre.
+                </p>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      function renderValor(container, sub) {
+        if (!sub || sub === "roi") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-dollar-sign mr-2"></i> Valor financeiro
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">Por que (B–C)/C engana em projetos de IA</h1>
+                <p class="text-slate-400 text-lg">Fórmula simples esconde três custos que só aparecem depois que o projeto está rodando.</p>
+              </div>
+
+              <div class="grid grid-cols-3 gap-6 mb-8">
+                ${[
+                  {
+                    title: "Custo recorrente invisível",
+                    icon: "eye-slash",
+                    color: "amber",
+                    desc: "Tokens de API, inferência, reentreino trimestral, curadoria de dados. Pode ser <strong class='text-white'>40-60% do custo do ano 1</strong>.",
+                  },
+                  {
+                    title: "Payback, não só ROI",
+                    icon: "clock-rotate-left",
+                    color: "amber",
+                    desc: "ROI anual diz o retorno. <strong class='text-white'>Payback</strong> diz em quantos meses o dinheiro volta. Projetos com payback > 18 meses competem com capital e perdem.",
+                  },
+                  {
+                    title: "Cost of Delay",
+                    icon: "hourglass-end",
+                    color: "amber",
+                    desc: "Cada mês que a ideia fica parada é benefício perdido. Um projeto de R$ 300k/ano que atrasa 4 meses 'custa' <strong class='text-white'>R$ 100k em valor não capturado</strong>.",
+                  },
+                ]
+                  .map(
+                    (card) => `
+                  <div class="card rounded-xl p-6 border-l-4 border-l-${card.color}-500">
+                    <div class="w-12 h-12 bg-${card.color}-500/20 rounded-xl flex items-center justify-center mb-4">
+                      <i class="fas fa-${card.icon} text-${card.color}-400 text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">${card.title}</h3>
+                    <p class="text-sm text-slate-400">${card.desc}</p>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+
+              <div class="card rounded-xl p-6 border-l-4 border-l-green-500">
+                <h3 class="text-sm font-bold text-green-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-ruler mr-2"></i> Regra de bolso
+                </h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                  Horizonte de <strong class="text-white">3 anos</strong>, custo recorrente como <strong class="text-white">linha separada</strong>, payback em meses. Se o simulador não souber responder isso, o caso de negócio está incompleto.
+                </p>
+              </div>
+
+              <div class="mt-6 flex gap-4">
+                <button onclick="router('valor/caso')" class="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all">
+                  <i class="fas fa-book-open mr-2"></i>Ver caso prático: Triagem RH
+                </button>
+                <button onclick="router('lab/roi')" class="px-5 py-3 bg-amber-600/20 border border-amber-600 text-amber-400 hover:bg-amber-600/30 rounded-lg text-sm font-semibold transition-all">
+                  <i class="fas fa-calculator mr-2"></i>Abrir ROI Simulator
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (sub === "caso") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-book-open mr-2"></i> Estudo de caso
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">Triagem de currículos</h1>
+                <p class="text-slate-400 text-lg">Caso completo com premissas justificadas, TCO de 3 anos e veredito.</p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-6 mb-6">
+                <div class="card rounded-xl p-6 border-l-4 border-l-slate-500">
+                  <h3 class="text-lg font-bold text-white mb-3"><i class="fas fa-chart-bar text-slate-400 mr-2"></i>Baseline atual</h3>
+                  <ul class="text-sm text-slate-300 space-y-2">
+                    <li><i class="fas fa-angle-right mr-2 text-slate-500"></i>3 recrutadores, 40% do tempo triando</li>
+                    <li><i class="fas fa-angle-right mr-2 text-slate-500"></i>3 × R$ 5.500 × 1.4 encargos × 12 × 40% = <strong class="text-white">R$ 110.880/ano</strong></li>
+                    <li><i class="fas fa-angle-right mr-2 text-slate-500"></i>200 vagas/ano, 60 candidatos/vaga = 12.000 currículos</li>
+                  </ul>
+                </div>
+                <div class="card rounded-xl p-6 border-l-4 border-l-blue-500">
+                  <h3 class="text-lg font-bold text-white mb-3"><i class="fas fa-lightbulb text-blue-400 mr-2"></i>Premissa do ganho (justificada)</h3>
+                  <ul class="text-sm text-slate-300 space-y-2">
+                    <li><i class="fas fa-angle-right mr-2 text-blue-400"></i>IA pré-filtra 70% dos currículos óbvios</li>
+                    <li><i class="fas fa-angle-right mr-2 text-blue-400"></i>Recrutador foca em shortlist de 30%</li>
+                    <li><i class="fas fa-angle-right mr-2 text-blue-400"></i>Ganho realista: <strong class="text-white">45% do tempo</strong> (não 50%), margem ±10 pp após piloto</li>
+                    <li><i class="fas fa-angle-right mr-2 text-blue-400"></i>Benefício: <strong class="text-green-400">R$ 49.896/ano</strong></li>
+                  </ul>
+                </div>
+                <div class="card rounded-xl p-6 border-l-4 border-l-amber-500">
+                  <h3 class="text-lg font-bold text-white mb-3"><i class="fas fa-coins text-amber-400 mr-2"></i>Custos completos (3 anos)</h3>
+                  <ul class="text-sm text-slate-300 space-y-2">
+                    <li><i class="fas fa-angle-right mr-2 text-amber-400"></i>Setup + integração ATS: R$ 18.000 (ano 1)</li>
+                    <li><i class="fas fa-angle-right mr-2 text-amber-400"></i>API LLM + infra: R$ 9.600/ano</li>
+                    <li><i class="fas fa-angle-right mr-2 text-amber-400"></i>Reentreino + curadoria: R$ 4.800/ano</li>
+                    <li><i class="fas fa-angle-right mr-2 text-amber-400"></i><strong class="text-white">TCO 3 anos: R$ 61.200</strong></li>
+                  </ul>
+                </div>
+                <div class="card rounded-xl p-6 border-l-4 border-l-green-500 bg-gradient-to-br from-slate-900 to-green-950/30">
+                  <h3 class="text-lg font-bold text-white mb-3"><i class="fas fa-trophy text-green-400 mr-2"></i>Veredito</h3>
+                  <ul class="text-sm text-slate-300 space-y-2">
+                    <li><i class="fas fa-angle-right mr-2 text-green-400"></i>Benefício 3 anos: R$ 149.688</li>
+                    <li><i class="fas fa-angle-right mr-2 text-green-400"></i>TCO 3 anos: R$ 61.200</li>
+                    <li><i class="fas fa-angle-right mr-2 text-green-400"></i><strong class="text-green-400 text-base">ROI 3 anos: 145%</strong></li>
+                    <li><i class="fas fa-angle-right mr-2 text-green-400"></i><strong class="text-green-400 text-base">Payback: ~6 meses</strong></li>
+                    <li><i class="fas fa-angle-right mr-2 text-green-400"></i>Score matriz: 38 → <strong class="text-green-400">Aprovar</strong></li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="card rounded-xl p-6 border-l-4 border-l-blue-500">
+                <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-info-circle mr-2"></i> Ancoragem da premissa
+                </h3>
+                <p class="text-sm text-slate-300">
+                  O número <strong class="text-white">45%</strong> saiu de benchmarks públicos de triagem assistida (LinkedIn Talent Insights 2024, entre 35% e 55%).
+                  <strong class="text-white">Sempre ancore a premissa.</strong> Se não houver benchmark, rode piloto de 30 dias antes de assumir a economia.
+                </p>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      function renderGovernanca(container, sub) {
+        if (!sub || sub === "gonogo") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-shield-halved mr-2"></i> Governança
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">Go &amp; No-Go: dois lados da mesma moeda</h1>
+                <p class="text-slate-400 text-lg">Filtros binários que antecedem o scoring.</p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-6 mb-8">
+                <div class="card rounded-xl p-6 border-l-4 border-l-green-500">
+                  <h3 class="text-lg font-bold text-green-400 mb-4"><i class="fas fa-check-circle mr-2"></i> Critérios de Go <span class="text-xs text-slate-400 font-normal">(precisa ter os 4)</span></h3>
+                  <ul class="space-y-3 text-sm">
+                    ${[
+                      "Problema de negócio claro, com dono nomeado",
+                      "KPI mensurável antes e depois",
+                      "Dados existem ou há plano concreto de estruturação",
+                      "Sponsor de negócio com autoridade de decisão",
+                    ]
+                      .map(
+                        (item) => `
+                      <li class="flex items-start gap-3">
+                        <i class="fas fa-check text-green-400 mt-1"></i>
+                        <span class="text-slate-300">${item}</span>
+                      </li>
+                    `,
+                      )
+                      .join("")}
+                  </ul>
+                </div>
+                <div class="card rounded-xl p-6 border-l-4 border-l-red-500">
+                  <h3 class="text-lg font-bold text-red-400 mb-4"><i class="fas fa-times-circle mr-2"></i> Critérios de No-Go <span class="text-xs text-slate-400 font-normal">(qualquer 1 reprova)</span></h3>
+                  <ul class="space-y-3 text-sm">
+                    ${[
+                      "'Queremos usar IA' sem problema definido",
+                      "Sem métrica de sucesso antes do início",
+                      "Dados inexistentes e sem plano para criá-los",
+                      "Sem sponsor ou sponsor que 'apenas acompanha'",
+                    ]
+                      .map(
+                        (item) => `
+                      <li class="flex items-start gap-3">
+                        <i class="fas fa-xmark text-red-400 mt-1"></i>
+                        <span class="text-slate-300">${item}</span>
+                      </li>
+                    `,
+                      )
+                      .join("")}
+                  </ul>
+                </div>
+              </div>
+
+              <div class="card rounded-xl p-6 border-l-4 border-l-amber-500">
+                <h3 class="text-sm font-bold text-amber-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-stopwatch mr-2"></i> Teste de 30 segundos
+                </h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                  Se o sponsor <strong class="text-white">não consegue descrever o problema e o KPI sem ler slides</strong>, volte para a fase de descoberta antes de gastar mais um dia.
+                </p>
+              </div>
+            </div>
+          `;
+        } else if (sub === "risco") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-triangle-exclamation mr-2"></i> Risco
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">Regulação, viés e explicabilidade</h1>
+                <p class="text-slate-400 text-lg">Em 2026, ignorar esta camada não é opção. Cada ideia passa por este filtro antes da matriz.</p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-6 mb-6">
+                ${[
+                  {
+                    title: "LGPD (Brasil)",
+                    icon: "file-shield",
+                    desc: "Dado pessoal? Base legal definida? DPIA (avaliação de impacto) feita? Direito de revisão humana em decisão automatizada?",
+                    color: "blue",
+                  },
+                  {
+                    title: "EU AI Act",
+                    icon: "globe",
+                    desc: "Classificação de risco: mínimo, limitado, alto, inaceitável. Sistemas de alto risco exigem documentação técnica, supervisão humana e logging.",
+                    color: "purple",
+                  },
+                  {
+                    title: "Viés e justiça",
+                    icon: "scale-balanced",
+                    desc: "Dados históricos carregam viés. Decisões de RH, crédito, avaliação devem ter métricas de fairness e revisão humana obrigatória.",
+                    color: "amber",
+                  },
+                  {
+                    title: "Explicabilidade",
+                    icon: "eye",
+                    desc: "Se o sistema decide algo que afeta pessoa, tem de explicar por quê. Modelos black-box em decisão sensível = risco regulatório e reputacional.",
+                    color: "cyan",
+                  },
+                ]
+                  .map(
+                    (card) => `
+                  <div class="card rounded-xl p-6 border-l-4 border-l-${card.color}-500">
+                    <div class="flex items-center gap-3 mb-3">
+                      <div class="w-12 h-12 bg-${card.color}-500/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-${card.icon} text-${card.color}-400 text-xl"></i>
+                      </div>
+                      <h3 class="text-lg font-bold text-white">${card.title}</h3>
+                    </div>
+                    <p class="text-sm text-slate-300">${card.desc}</p>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+
+              <div class="card rounded-xl p-6 border-l-4 border-l-red-500">
+                <h3 class="text-sm font-bold text-red-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-bell mr-2"></i> Gatilho de escalonamento
+                </h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                  Qualquer projeto que envolva <strong class="text-white">dado pessoal sensível</strong>, <strong class="text-white">decisão sobre pessoas</strong> ou <strong class="text-white">conteúdo para cliente externo</strong> passa obrigatoriamente por revisão jurídica antes de entrar na matriz.
+                </p>
+              </div>
+            </div>
+          `;
+        } else if (sub === "makebuild") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-code-branch mr-2"></i> Arquitetura
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">Make vs. Buy vs. RAG</h1>
+                <p class="text-slate-400 text-lg">Decidindo antes de codar. Três perguntas em ordem.</p>
+              </div>
+
+              <div class="card rounded-xl p-6 mb-6">
+                <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-4"><i class="fas fa-list-ol mr-2"></i>Árvore de decisão</h3>
+                <div class="space-y-3">
+                  ${[
+                    {
+                      q: "Existe SaaS que resolve 80% do problema?",
+                      label: "Sim → Buy",
+                      color: "green",
+                      pill: "buy",
+                    },
+                    {
+                      q: "O valor está na combinação com dados internos proprietários?",
+                      label: "Sim → Foundation Model + RAG",
+                      color: "blue",
+                      pill: "rag",
+                    },
+                    {
+                      q: "É um diferencial competitivo permanente, com dados únicos e escala?",
+                      label: "Sim → Build (modelo próprio ou fine-tuning)",
+                      color: "purple",
+                      pill: "build",
+                    },
+                  ]
+                    .map(
+                      (row, i) => `
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-${row.color}-500/20 text-${row.color}-400 flex items-center justify-center text-sm font-bold flex-shrink-0">${i + 1}</div>
+                      <div class="flex-1 bg-slate-800/50 rounded-lg px-4 py-3 border border-slate-700">
+                        <p class="text-sm text-slate-300">${row.q}</p>
+                      </div>
+                      <span class="pill ${row.pill} px-4 py-2 rounded-full text-xs font-bold text-white whitespace-nowrap">${row.label}</span>
+                    </div>
+                  `,
+                    )
+                    .join("")}
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-6">
+                ${[
+                  {
+                    title: "Buy",
+                    color: "green",
+                    icon: "cart-shopping",
+                    desc: "Rápido, previsível. Custo por seat. <strong class='text-white'>Risco:</strong> lock-in e limite de customização.",
+                  },
+                  {
+                    title: "RAG",
+                    color: "blue",
+                    icon: "database",
+                    desc: "Combina LLM pronto + base de conhecimento interna. <strong class='text-white'>80% dos casos GenAI em empresa cabem aqui.</strong>",
+                  },
+                  {
+                    title: "Build",
+                    color: "purple",
+                    icon: "hammer",
+                    desc: "Caro, demorado. Só justifica com <strong class='text-white'>vantagem competitiva duradoura</strong> e volume que amortize o investimento.",
+                  },
+                ]
+                  .map(
+                    (card) => `
+                  <div class="card rounded-xl p-6 border-t-4 border-t-${card.color}-500">
+                    <div class="w-12 h-12 bg-${card.color}-500/20 rounded-xl flex items-center justify-center mb-4">
+                      <i class="fas fa-${card.icon} text-${card.color}-400 text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">${card.title}</h3>
+                    <p class="text-sm text-slate-400">${card.desc}</p>
+                  </div>
+                `,
+                  )
+                  .join("")}
+              </div>
+
+              <div class="mt-6 card rounded-xl p-6 border-l-4 border-l-amber-500">
+                <h3 class="text-sm font-bold text-amber-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-lightbulb mr-2"></i> Observação
+                </h3>
+                <p class="text-sm text-slate-300">
+                  A maior parte das ideias do backlog cabe em <strong class="text-white">Buy ou RAG</strong>. Build é exceção. Se o time técnico sempre responde "Build", há viés de "quero construir isso" competindo com valor.
+                </p>
+              </div>
+            </div>
+          `;
+        } else if (sub === "portfolio") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-chart-pie mr-2"></i> Execução
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">Portfólio balanceado e adoção real</h1>
+                <p class="text-slate-400 text-lg">Metodologia sem adoção é ROI zero. Duas dimensões de equilíbrio.</p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-8 mb-8">
+                <div>
+                  <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-4">
+                    <i class="fas fa-layer-group mr-2"></i>Balanço por horizonte
+                  </h3>
+                  <div class="space-y-4">
+                    ${[
+                      {
+                        h: "H1 · 70%",
+                        title: "Quick Wins",
+                        color: "green",
+                        desc: "Retorno em 30-90 dias. Nível 1-2 de taxonomia. Alimentam a cultura de entrega.",
+                      },
+                      {
+                        h: "H2 · 20%",
+                        title: "Pilotos",
+                        color: "amber",
+                        desc: "Validam nova tecnologia ou modelo. 3-6 meses. Alguns viram H1 no trimestre seguinte.",
+                      },
+                      {
+                        h: "H3 · 10%",
+                        title: "Estruturais",
+                        color: "purple",
+                        desc: "Arquitetura de dados, plataforma de IA, capacidade. Sem eles, H1 trava em 12 meses.",
+                      },
+                    ]
+                      .map(
+                        (h) => `
+                      <div class="card rounded-xl p-5 border-l-4 border-l-${h.color}-500">
+                        <div class="flex items-center gap-3 mb-2">
+                          <span class="px-2 py-0.5 bg-${h.color}-500/20 text-${h.color}-400 text-[10px] font-bold rounded uppercase tracking-wider">${h.h}</span>
+                          <h4 class="text-lg font-bold text-white">${h.title}</h4>
+                        </div>
+                        <p class="text-sm text-slate-400">${h.desc}</p>
+                      </div>
+                    `,
+                      )
+                      .join("")}
+                  </div>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-4">
+                    <i class="fas fa-people-group mr-2"></i>Três fatores de adoção
+                  </h3>
+                  <div class="space-y-4">
+                    ${[
+                      {
+                        title: "Patrocínio visível",
+                        icon: "user-tie",
+                        desc: "Líder usa, mostra, defende. Sem isso, o projeto vira curiosidade opcional.",
+                      },
+                      {
+                        title: "Capacitação contextual",
+                        icon: "graduation-cap",
+                        desc: "Não treinamento genérico de IA. Treinamento no processo exato com a ferramenta exata.",
+                      },
+                      {
+                        title: "Métricas de uso",
+                        icon: "chart-simple",
+                        desc: "Adoção medida semanalmente. Se uso cai, investiga-se antes do ROI anual quebrar.",
+                      },
+                    ]
+                      .map(
+                        (f) => `
+                      <div class="card rounded-xl p-5">
+                        <div class="flex items-center gap-3 mb-2">
+                          <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-${f.icon} text-blue-400"></i>
+                          </div>
+                          <h4 class="text-lg font-bold text-white">${f.title}</h4>
+                        </div>
+                        <p class="text-sm text-slate-400 pl-13">${f.desc}</p>
+                      </div>
+                    `,
+                      )
+                      .join("")}
+                  </div>
+                </div>
+              </div>
+
+              <div class="card rounded-xl p-6 border-l-4 border-l-red-500">
+                <h3 class="text-sm font-bold text-red-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-bullhorn mr-2"></i> Alerta
+                </h3>
+                <p class="text-sm text-slate-300">
+                  A <strong class="text-white">métrica de uso</strong> é frequentemente esquecida — coloque-a na definição de pronto de todo projeto. Sem ela, ROI anual quebra silenciosamente.
+                </p>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      function renderLab(container, sub) {
+        if (sub === "scoring") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-amber-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-flask-vial mr-2"></i> Laboratório 1 · Hands-on
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">Scoring Calculator</h1>
+                <p class="text-slate-400 text-lg">Escolha uma das ideias do backlog. Mova os sliders. Veja o veredito em tempo real.</p>
+              </div>
+
+              <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <div class="lg:col-span-3 card rounded-xl p-6">
+                  <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-5">
+                    <i class="fas fa-sliders mr-2"></i>Pontue cada critério (1 a 5)
+                  </h3>
+                  <div class="space-y-5">
+                    ${[
+                      {
+                        id: "impacto",
+                        label: "Impacto Financeiro",
+                        weight: "×3",
+                      },
+                      {
+                        id: "eficiencia",
+                        label: "Ganho Operacional",
+                        weight: "×2",
+                      },
+                      {
+                        id: "viabilidade",
+                        label: "Facilidade Técnica",
+                        weight: "×2",
+                      },
+                      {
+                        id: "dados",
+                        label: "Prontidão de Dados",
+                        weight: "×2",
+                      },
+                      { id: "risco", label: "Risco (5 = baixo)", weight: "×1" },
+                    ]
+                      .map(
+                        (c) => `
+                      <div class="calc-row bg-slate-800/40 p-4 rounded-lg border border-slate-700">
+                        <div class="flex justify-between items-center mb-2">
+                          <label class="text-sm font-bold text-white">${c.label}</label>
+                          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Peso ${c.weight}</span>
+                        </div>
+                        <input type="range" min="1" max="5" value="3" id="sc-${c.id}" oninput="recalc()">
+                        <div class="flex justify-between text-xs text-slate-500 mt-1 font-mono">
+                          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                        </div>
+                      </div>
+                    `,
+                      )
+                      .join("")}
+                  </div>
+                </div>
+
+                <div class="lg:col-span-2">
+                  <div class="card rounded-xl p-6 bg-gradient-to-br from-slate-900 to-blue-950/40 border border-blue-600/40 text-center sticky top-4">
+                    <div class="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-2">Score Total</div>
+                    <div class="text-7xl font-black text-white mb-1">
+                      <span id="sc-total">30</span><small class="text-2xl text-slate-500">/ 50</small>
+                    </div>
+                    <div class="verdict piloto px-4 py-3 rounded-lg mt-5 text-sm font-bold" id="sc-verdict">Piloto (30-60 dias)</div>
+                    <p class="text-xs text-slate-400 mt-4 leading-relaxed" id="sc-desc">Rode uma PoC controlada com critério de saída antes de comprometer o portfólio.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card rounded-xl p-6 mt-6 border-l-4 border-l-blue-500">
+                <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-users mr-2"></i> Dinâmica sugerida
+                </h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                  Divida em grupos de 3-4 pessoas. Cada grupo traz uma ideia. Pontue em conjunto. Anote o score. Ao final, faça um ranking rápido — <strong class="text-white">onde houver maior divergência de nota</strong>, aí está o debate que vale.
+                </p>
+              </div>
+            </div>
+          `;
+          recalc();
+        } else if (sub === "roi") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-amber-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-flask-vial mr-2"></i> Laboratório 2 · Hands-on
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">ROI Simulator</h1>
+                <p class="text-slate-400 text-lg">Use os dados da ideia que você pontuou no Lab 1.</p>
+              </div>
+
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card rounded-xl p-6">
+                  <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-5">
+                    <i class="fas fa-keyboard mr-2"></i>Informe os parâmetros
+                  </h3>
+                  <div class="space-y-4">
+                    ${[
+                      {
+                        id: "roi-b",
+                        label: "Benefício anual (R$)",
+                        value: "49896",
+                        hint: "Horas poupadas × custo/hora + redução de erro + receita extra.",
+                      },
+                      {
+                        id: "roi-c0",
+                        label: "Custo inicial — setup (R$)",
+                        value: "18000",
+                        hint: "Licenças, integração, consultoria, treinamento inicial.",
+                      },
+                      {
+                        id: "roi-cr",
+                        label: "Custo recorrente anual (R$)",
+                        value: "14400",
+                        hint: "API, infra, reentreino, curadoria, suporte.",
+                      },
+                      {
+                        id: "roi-h",
+                        label: "Horizonte (anos)",
+                        value: "3",
+                        hint: "Recomendado: 3 anos.",
+                      },
+                    ]
+                      .map(
+                        (f) => `
+                      <div class="bg-slate-800/40 p-4 rounded-lg border border-slate-700">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">${f.label}</label>
+                        <input type="number" id="${f.id}" value="${f.value}" min="0" oninput="calcRoi()"
+                          class="w-full bg-transparent border-b border-slate-600 focus:border-blue-500 text-xl font-bold text-white outline-none py-1 font-mono">
+                        <p class="text-xs text-slate-500 mt-2">${f.hint}</p>
+                      </div>
+                    `,
+                      )
+                      .join("")}
+                  </div>
+                </div>
+
+                <div class="card rounded-xl p-6 bg-gradient-to-br from-slate-900 to-blue-950/40 border border-blue-600/40">
+                  <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-5">
+                    <i class="fas fa-chart-line mr-2"></i>Resultado
+                  </h3>
+                  <div class="space-y-4">
+                    ${[
+                      { id: "roi-ano1", label: "ROI 1º ano" },
+                      { id: "roi-horizonte", label: "ROI no horizonte" },
+                      { id: "roi-payback", label: "Payback" },
+                      { id: "roi-liquido", label: "Ganho líquido (horizonte)" },
+                    ]
+                      .map(
+                        (k) => `
+                      <div class="flex justify-between items-baseline py-3 border-b border-slate-700/50">
+                        <span class="text-sm text-slate-400">${k.label}</span>
+                        <span class="k-val text-2xl font-black text-green-400 font-mono" id="${k.id}">—</span>
+                      </div>
+                    `,
+                      )
+                      .join("")}
+                  </div>
+                </div>
+              </div>
+
+              <div class="card rounded-xl p-6 mt-6 border-l-4 border-l-amber-500">
+                <h3 class="text-sm font-bold text-amber-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-info-circle mr-2"></i> Observação
+                </h3>
+                <p class="text-sm text-slate-300">
+                  Se alguém não souber um número, use <strong class="text-white">ordem de grandeza</strong>. Um caso sem estimativa de custo recorrente é um caso <strong class="text-white">incompleto</strong>.
+                </p>
+              </div>
+            </div>
+          `;
+          calcRoi();
+        } else if (sub === "ficha") {
+          container.innerHTML = `
+            <div class="p-8 fade-in">
+              <div class="mb-8">
+                <div class="text-green-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  <i class="fas fa-clipboard-check mr-2"></i> Próximo passo concreto
+                </div>
+                <h1 class="text-4xl font-black text-white mb-3">Ficha de Avaliação</h1>
+                <p class="text-slate-400 text-lg">Saia deste workshop com uma ficha pronta para submeter ao próximo comitê.</p>
+              </div>
+
+              <div class="card rounded-xl p-8 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="md:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nome da ideia</label>
+                    <input type="text" id="f-nome" placeholder="Ex.: Triagem automatizada de currículos"
+                      class="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-lg text-white outline-none">
+                  </div>
+                  <div class="md:col-span-1">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Sponsor (nome e cargo)</label>
+                    <input type="text" id="f-sponsor" placeholder="Ex.: Ana Souza — Diretora RH"
+                      class="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-lg text-white outline-none">
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Problema de negócio</label>
+                    <textarea id="f-problema" placeholder="O que dói hoje, em uma frase." rows="2"
+                      class="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-lg text-white outline-none resize-y"></textarea>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">KPI de sucesso</label>
+                    <input type="text" id="f-kpi" placeholder="Ex.: tempo médio de triagem reduzido em 45%"
+                      class="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-lg text-white outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Score da matriz</label>
+                    <input type="number" id="f-score" min="10" max="50" placeholder="10-50"
+                      class="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-lg text-white outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">ROI estimado (horizonte 3 anos)</label>
+                    <input type="text" id="f-roi" placeholder="Ex.: 145%"
+                      class="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-lg text-white outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Payback estimado</label>
+                    <input type="text" id="f-payback" placeholder="Ex.: 9 meses"
+                      class="w-full px-4 py-3 bg-slate-800 border border-slate-700 focus:border-blue-500 rounded-lg text-white outline-none">
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3 mt-6">
+                  <button onclick="copiarFicha()" class="px-5 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-all">
+                    <i class="fas fa-copy mr-2"></i>Copiar ficha para submissão
+                  </button>
+                  <button onclick="limparFicha()" class="px-5 py-3 bg-slate-700/40 hover:bg-slate-700/60 text-slate-300 rounded-lg text-sm font-semibold transition-all">
+                    <i class="fas fa-eraser mr-2"></i>Limpar
+                  </button>
+                  <span id="ficha-status" class="text-sm text-green-400 font-semibold"></span>
+                </div>
+              </div>
+
+              <div class="card rounded-xl p-6 border-l-4 border-l-blue-500">
+                <h3 class="text-sm font-bold text-blue-400 uppercase tracking-widest mb-3">
+                  <i class="fas fa-calendar-check mr-2"></i> Cadência do comitê de IA
+                </h3>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                  Reúne toda <strong class="text-white">primeira terça do mês</strong>. Ideias com ficha completa entregue até a sexta anterior entram em pauta. Ideias aprovadas (score ≥ 35) recebem <strong class="text-white">sponsor, squad e prazo em até 15 dias úteis</strong>.
+                </p>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      // ==================== SCORING CALCULATOR ====================
+      const weights = {
+        impacto: 3,
+        eficiencia: 2,
+        viabilidade: 2,
+        dados: 2,
+        risco: 1,
+      };
+
+      function recalc() {
+        const scTotal = document.getElementById("sc-total");
+        if (!scTotal) return;
+        let total = 0;
+        for (const k in weights) {
+          const el = document.getElementById(`sc-${k}`);
+          if (!el) return;
+          total += Number(el.value) * weights[k];
+        }
+        scTotal.textContent = total;
+        const v = document.getElementById("sc-verdict");
+        const d = document.getElementById("sc-desc");
+        if (total >= 35) {
+          v.className =
+            "verdict go px-4 py-3 rounded-lg mt-5 text-sm font-bold";
+          v.textContent = "Aprovar · entra no portfólio ativo";
+          d.textContent =
+            "Defina sponsor, squad e prazo em até 15 dias. Submeta a ficha ao próximo comitê.";
+        } else if (total >= 25) {
+          v.className =
+            "verdict piloto px-4 py-3 rounded-lg mt-5 text-sm font-bold";
+          v.textContent = "Piloto (30-60 dias)";
+          d.textContent =
+            "Rode uma PoC controlada com critério de saída antes de comprometer o portfólio.";
+        } else {
+          v.className =
+            "verdict nogo px-4 py-3 rounded-lg mt-5 text-sm font-bold";
+          v.textContent = "Reprovar · retorna ao backlog";
+          d.textContent =
+            "Investigue: falta sponsor? Dados? Problema claro? Retorne quando mudar.";
+        }
+      }
+
+      // ==================== ROI SIMULATOR ====================
+      function calcRoi() {
+        const bEl = document.getElementById("roi-b");
+        if (!bEl) return;
+        const B = +bEl.value || 0;
+        const C0 = +document.getElementById("roi-c0").value || 0;
+        const Cr = +document.getElementById("roi-cr").value || 0;
+        const H = Math.max(1, +document.getElementById("roi-h").value || 3);
+
+        const custoAno1 = C0 + Cr;
+        const roiAno1 = custoAno1 > 0 ? ((B - custoAno1) / custoAno1) * 100 : 0;
+
+        const custoH = C0 + Cr * H;
+        const beneficioH = B * H;
+        const roiH = custoH > 0 ? ((beneficioH - custoH) / custoH) * 100 : 0;
+
+        const beneficioLiquidoMensal = (B - Cr) / 12;
+        const payback =
+          beneficioLiquidoMensal > 0 ? C0 / beneficioLiquidoMensal : Infinity;
+
+        const ganhoLiquido = beneficioH - custoH;
+
+        const fmtPct = (v) => (isFinite(v) ? `${v.toFixed(0)}%` : "—");
+        const fmtMes = (v) => (isFinite(v) ? `${v.toFixed(1)} meses` : "∞");
+        const fmtRS = (v) => `R$ ${Math.round(v).toLocaleString("pt-BR")}`;
+
+        const setVal = (id, text, good) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.textContent = text;
+          el.className =
+            "k-val text-2xl font-black font-mono " +
+            (good === "good"
+              ? "text-green-400"
+              : good === "warn"
+                ? "text-amber-400"
+                : good === "bad"
+                  ? "text-red-400"
+                  : "text-slate-300");
+        };
+
+        setVal(
+          "roi-ano1",
+          fmtPct(roiAno1),
+          roiAno1 >= 50 ? "good" : roiAno1 >= 0 ? "warn" : "bad",
+        );
+        setVal(
+          "roi-horizonte",
+          fmtPct(roiH),
+          roiH >= 100 ? "good" : roiH >= 0 ? "warn" : "bad",
+        );
+        setVal(
+          "roi-payback",
+          fmtMes(payback),
+          payback <= 12 ? "good" : payback <= 18 ? "warn" : "bad",
+        );
+        setVal(
+          "roi-liquido",
+          fmtRS(ganhoLiquido),
+          ganhoLiquido >= 0 ? "good" : "bad",
+        );
+      }
+
+      // ==================== FICHA ====================
+      function copiarFicha() {
+        const v = (id) => document.getElementById(id).value.trim() || "—";
+        const texto = [
+          "=== FICHA DE AVALIAÇÃO · Priorização e ROI em IA ===",
+          `Ideia: ${v("f-nome")}`,
+          `Sponsor: ${v("f-sponsor")}`,
+          `Problema: ${v("f-problema")}`,
+          `KPI: ${v("f-kpi")}`,
+          `Score da matriz: ${v("f-score")} / 50`,
+          `ROI (3 anos): ${v("f-roi")}`,
+          `Payback: ${v("f-payback")}`,
+          `Data: ${new Date().toLocaleDateString("pt-BR")}`,
+        ].join("\n");
+        const status = document.getElementById("ficha-status");
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(texto).then(
+            () => {
+              status.textContent = "Copiado! Cole no e-mail do comitê.";
+              setTimeout(() => (status.textContent = ""), 4000);
+            },
+            () => {
+              status.textContent = "Falha ao copiar. Veja o console.";
+              console.log(texto);
+            },
+          );
+        } else {
+          console.log(texto);
+          status.textContent = "Ficha no console (clipboard indisponível).";
+        }
+      }
+
+      function limparFicha() {
+        [
+          "f-nome",
+          "f-sponsor",
+          "f-problema",
+          "f-kpi",
+          "f-score",
+          "f-roi",
+          "f-payback",
+        ].forEach((id) => (document.getElementById(id).value = ""));
+        document.getElementById("ficha-status").textContent = "";
+      }
+
+      // ==================== INIT ====================
+      router("dashboard");
+    </script>
+  </body>
+</html>
